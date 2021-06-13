@@ -1,8 +1,9 @@
 using AspNetCore.Identity.MongoDbCore.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using MongoDbGenericRepository.Models;
-using MongoDbGenericRepository.Utils;
+using MongoDB.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,100 +12,48 @@ namespace AspNetCore.Identity.MongoDbCore.Models
 {
 
     /// <summary>
-    /// A <see cref="MongoIdentityUser{TKey}"/> where TKey is a <see cref="string"/>
-    /// </summary>
-    public class MongoDbIdentityUser : MongoIdentityUser<string>
-    {
-        /// <summary>
-        /// The constructor for a <see cref="MongoDbIdentityUser"/>
-        /// </summary>
-        public MongoDbIdentityUser() : base()
-        {
-        }
-
-        /// <summary>
-        /// The constructor for a <see cref="MongoDbIdentityUser"/>, taking a username.
-        /// </summary>
-        /// <param name="userName">The name of the user.</param>
-        public MongoDbIdentityUser(string userName) : base(userName)
-        {
-        }
-
-        /// <summary>
-        /// The constructor for a <see cref="MongoDbIdentityUser"/>, taking a username and an email address.
-        /// </summary>
-        /// <param name="userName">The name of the user.</param>
-        /// <param name="email">The email address of the user.</param>
-        public MongoDbIdentityUser(string userName, string email) : base(userName, email)
-        {
-        }
-    }
-
-    /// <summary>
-    /// A <see cref="MongoIdentityUser{TKey}"/> where TKey is a <see cref="Guid"/>
-    /// </summary>
-    public class MongoIdentityUser : MongoIdentityUser<Guid>
-    {
-        /// <summary>
-        /// The constructor for a <see cref="MongoIdentityUser"/>
-        /// </summary>
-        public MongoIdentityUser() : base()
-        {
-        }
-
-        /// <summary>
-        /// The constructor for a <see cref="MongoDbIdentityUser"/>, taking a username.
-        /// </summary>
-        /// <param name="userName">The name of the user.</param>
-        public MongoIdentityUser(string userName) : base(userName)
-        {
-        }
-
-        /// <summary>
-        /// The constructor for a <see cref="MongoDbIdentityUser"/>, taking a username and an email address.
-        /// </summary>
-        /// <param name="userName">The name of the user.</param>
-        /// <param name="email">The email address of the user.</param>
-        public MongoIdentityUser(string userName, string email) : base(userName, email)
-        {
-        }
-    }
-
-    /// <summary>
     /// A document representing an <see cref="IdentityUser{TKey}"/> document.
     /// </summary>
-    /// <typeparam name="TKey">The type of the primary key.</typeparam>
-     public class MongoIdentityUser<TKey> : IdentityUser<TKey>, IDocument<TKey>, IClaimHolder
-        where TKey : IEquatable<TKey>
+    public class MongoIdentityUser : IdentityUser<string>, IEntity, IClaimHolder
     {
 
         /// <summary>
-        /// The version of the schema do the <see cref="MongoIdentityUser{TKey}"/> document.
+        /// The version of the schema do the <see cref="MongoIdentityUser"/> document.
         /// </summary>
-        public int Version { get; set; }
+        public virtual int Version { get; set; }
         /// <summary>
         /// The date and time at which this user was created, in UTC.
         /// </summary>
-        public DateTime CreatedOn { get; private set; }
+        public virtual DateTime CreatedOn { get; private set; }
         /// <summary>
         /// The claims this user has.
         /// </summary>
-        public List<MongoClaim> Claims { get; set; }
+        public virtual List<MongoClaim> Claims { get; set; }
         /// <summary>
         /// The role Ids of the roles that this user has.
         /// </summary>
-        public List<TKey> Roles { get; set; }
+        public virtual HashSet<string> Roles { get; set; }
         /// <summary>
         /// The list of <see cref="UserLoginInfo"/>s that this user has.
         /// </summary>
-        public List<UserLoginInfo> Logins { get; set; }
+        public virtual List<UserLoginInfo> Logins { get; set; }
         /// <summary>
         /// The list of <see cref="Token"/>s that this user has.
         /// </summary>
-        public List<Token> Tokens { get; set; }
+        public virtual List<Token> Tokens { get; set; }
+
+
+        /// <inheritdoc/>
+        [Ignore]
+        public override string Id { get; set; }
+
+        /// <inheritdoc/>
+        [BsonId, AsObjectId]
+        public string ID { get => Id; set => Id = value; }
+
 
         /// <summary>
-        /// The constructor for a <see cref="MongoIdentityUser{TKey}"/>, taking a username and an email address.
+        /// The constructor for a <see cref="MongoIdentityUser"/>, taking a username and an email address.
         /// </summary>
         public MongoIdentityUser()
         {
@@ -113,7 +62,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         }
 
         /// <summary>
-        /// The constructor for a <see cref="MongoIdentityUser{TKey}"/>, taking a username and an email address.
+        /// The constructor for a <see cref="MongoIdentityUser"/>, taking a username and an email address.
         /// </summary>
         /// <param name="userName">The name of the user.</param>
         /// <param name="email">The email address of the user.</param>
@@ -126,7 +75,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         }
 
         /// <summary>
-        /// The constructor for a <see cref="MongoIdentityUser{TKey}"/>, taking a username.
+        /// The constructor for a <see cref="MongoIdentityUser"/>, taking a username.
         /// </summary>
         /// <param name="userName">The name of the user.</param>
         public MongoIdentityUser(string userName)
@@ -144,17 +93,17 @@ namespace AspNetCore.Identity.MongoDbCore.Models
             CreatedOn = DateTime.UtcNow;
             Claims = new List<MongoClaim>();
             Logins = new List<UserLoginInfo>();
-            Roles = new List<TKey>();
+            Roles = new HashSet<string>();
             Tokens = new List<Token>();
-            Id = IdGenerator.GetId<TKey>();
+            Id = GenerateNewID();
         }
 
         /// <summary>
-        /// Sets the version of the schema for the <see cref="MongoIdentityUser{TKey}"/> document.
+        /// Sets the version of the schema for the <see cref="MongoIdentityUser"/> document.
         /// </summary>
         /// <param name="version"></param>
         /// <returns></returns>
-        public virtual MongoIdentityUser<TKey> SetVersion(int version)
+        public virtual MongoIdentityUser SetVersion(int version)
         {
             Version = version;
             return this;
@@ -167,10 +116,10 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// </summary>
         /// <param name="roleId">The Id of the role you want to remove.</param>
         /// <returns>True if the removal was successful.</returns>
-        public virtual bool RemoveRole(TKey roleId)
+        public virtual bool RemoveRole(string roleId)
         {
             var roleClaim = Roles.FirstOrDefault(e => e.Equals(roleId));
-            if (roleClaim != null && !roleClaim.Equals(default(TKey)))
+            if (roleClaim != null && !roleClaim.Equals(default))
             {
                 Roles.Remove(roleId);
                 return true;
@@ -183,9 +132,9 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// </summary>
         /// <param name="roleId">The Id of the role you want to add.</param>
         /// <returns>True if the addition was successful.</returns>
-        public virtual bool AddRole(TKey roleId)
+        public virtual bool AddRole(string roleId)
         {
-            if(roleId == null || roleId.Equals(default(TKey)))
+            if (roleId == null || roleId.Equals(default))
             {
                 throw new ArgumentNullException(nameof(roleId));
             }
@@ -216,7 +165,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
             {
                 return false;
             }
-            
+
             Logins.Add(new UserLoginInfo(userLoginInfo.LoginProvider, userLoginInfo.ProviderKey, userLoginInfo.ProviderDisplayName));
             return true;
         }
@@ -256,13 +205,13 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// <param name="loginProvider"></param>
         /// <param name="providerKey"></param>
         /// <returns></returns>
-        public virtual IdentityUserLogin<TKey> GetUserLogin(string loginProvider, string providerKey)
+        public virtual IdentityUserLogin<string> GetUserLogin(string loginProvider, string providerKey)
         {
 
             var login = Logins.FirstOrDefault(e => e.LoginProvider == loginProvider && e.ProviderKey == providerKey);
             if (login != null)
             {
-                return new IdentityUserLogin<TKey>
+                return new IdentityUserLogin<string>
                 {
                     UserId = Id,
                     LoginProvider = login.LoginProvider,
@@ -270,7 +219,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
                     ProviderKey = login.ProviderKey
                 };
             }
-            return default(IdentityUserLogin<TKey>);
+            return default;
         }
 
         #endregion
@@ -283,7 +232,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// <param name="tokenToset">The token you want to set you want to set.</param>
         /// <param name="value">The value you want to set the token to.</param>
         /// <returns>Returns true if the token was successfully set.</returns>
-        public bool SetToken(IdentityUserToken<TKey> tokenToset, string value)
+        public bool SetToken(IdentityUserToken<string> tokenToset, string value)
         {
             var token = Tokens.FirstOrDefault(e => e.LoginProvider == tokenToset.LoginProvider && e.Name == tokenToset.Name);
             if (token != null)
@@ -300,12 +249,12 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// <param name="loginProvider">The value for the login provider.</param>
         /// <param name="name">The name of the token.</param>
         /// <returns>An <see cref="IdentityUser{TKey}"/> if found, or null.</returns>
-        public IdentityUserToken<TKey> GetToken(string loginProvider, string name)
+        public IdentityUserToken<string> GetToken(string loginProvider, string name)
         {
             var token = Tokens.FirstOrDefault(e => e.LoginProvider == loginProvider && e.Name == name);
             if (token != null)
             {
-                return new IdentityUserToken<TKey>
+                return new IdentityUserToken<string>
                 {
                     UserId = Id,
                     LoginProvider = token.LoginProvider,
@@ -313,7 +262,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
                     Value = token.Value
                 };
             }
-            return default(IdentityUserToken<TKey>);
+            return default;
         }
 
         /// <summary>
@@ -321,7 +270,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// </summary>
         /// <param name="token">The token you are looking for.</param>
         /// <returns>True if the user has the given token</returns>
-        public bool HasToken(IdentityUserToken<TKey> token)
+        public bool HasToken(IdentityUserToken<string> token)
         {
             return Tokens.Any(e => e.LoginProvider == token.LoginProvider
                                 && e.Name == token.Name
@@ -334,7 +283,7 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// <typeparam name="TUserToken">The type of the token.</typeparam>
         /// <param name="token">The token you want to add.</param>
         /// <returns>True if the addition was successful.</returns>
-        public bool AddUserToken<TUserToken>(TUserToken token) where TUserToken : IdentityUserToken<TKey>
+        public bool AddUserToken<TUserToken>(TUserToken token) where TUserToken : IdentityUserToken<string>
         {
             if (HasToken(token))
             {
@@ -356,9 +305,9 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// <typeparam name="TUserToken">The type of the token.</typeparam>
         /// <param name="token">The token you want to remove.</param>
         /// <returns>True if the removal was successful.</returns>
-        public bool RemoveUserToken<TUserToken>(TUserToken token) where TUserToken : IdentityUserToken<TKey>
+        public bool RemoveUserToken<TUserToken>(TUserToken token) where TUserToken : IdentityUserToken<string>
         {
-            var exists = Tokens.FirstOrDefault(e => e.LoginProvider == token.LoginProvider 
+            var exists = Tokens.FirstOrDefault(e => e.LoginProvider == token.LoginProvider
                                                  && e.Name == token.Name);
             if (exists == null)
             {
@@ -367,6 +316,12 @@ namespace AspNetCore.Identity.MongoDbCore.Models
             Tokens.Remove(exists);
             return true;
         }
+
+        /// <summary>
+        /// Generates a new ObjectId
+        /// </summary>
+        /// <returns></returns>
+        public virtual string GenerateNewID() => ObjectId.GenerateNewId().ToString();
 
         #endregion Token Management
 

@@ -43,7 +43,7 @@ namespace AspNetCore.Identity.MongoDbCore
 
         private static bool IsConventionApplicable(Type type)
         {
-            return type == typeof(MongoIdentityUser<>);
+            return type == typeof(MongoIdentityUser);
         }
     }
 }

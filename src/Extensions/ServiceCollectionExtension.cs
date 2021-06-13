@@ -4,7 +4,6 @@ using AspNetCore.Identity.MongoDbCore.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Identity.Core;
-using MongoDbGenericRepository;
 
 namespace AspNetCore.Identity.MongoDbCore.Extensions
 {
@@ -20,15 +19,14 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
         /// <typeparam name="TKey">The type of the primary key of the identity document.</typeparam>
         /// <param name="services">The collection of service descriptors.</param>
         /// <param name="mongoDbIdentityConfiguration">A configuration object of the AspNetCore.Identity.MongoDbCore package.</param>
-        public static IdentityBuilder ConfigureMongoDbIdentityUserOnly<TUser, TKey>(
+        public static IdentityBuilder ConfigureMongoDbIdentityUserOnly<TUser>(
             this IServiceCollection services,
             MongoDbIdentityConfiguration mongoDbIdentityConfiguration)
-                where TUser : MongoIdentityUser<TKey>, new()
-                where TKey : IEquatable<TKey>
+                where TUser : MongoIdentityUser, new()               
         {
             ValidateMongoDbSettings(mongoDbIdentityConfiguration.MongoDbSettings);
 
-            return CommonMongoDbSetup<TUser, MongoIdentityRole<TKey>, TKey>(services, mongoDbIdentityConfiguration);
+            return CommonMongoDbSetup<TUser, MongoIdentityRole<string>, string>(services, mongoDbIdentityConfiguration);
         }
 
 
@@ -112,8 +110,8 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
 
 
         private static IdentityBuilder CommonMongoDbSetup<TUser, TRole, TKey>(this IServiceCollection services, MongoDbIdentityConfiguration mongoDbIdentityConfiguration)
-                    where TUser : MongoIdentityUser<TKey>, new()
-                    where TRole : MongoIdentityRole<TKey>, new()
+                    where TUser : MongoIdentityUser, new()
+                    where TRole : MongoIdentityRole, new()
                     where TKey : IEquatable<TKey>
         {
 
@@ -121,7 +119,7 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
 
             builder = services.AddIdentityCore<TUser>()
                     .AddRoles<TRole>()
-                    .AddMongoDbStores<TUser, TRole, TKey>(
+                    .AddMongoDbStores<TUser, TRole, string>(
                         mongoDbIdentityConfiguration.MongoDbSettings.ConnectionString,
                         mongoDbIdentityConfiguration.MongoDbSettings.DatabaseName);
 
