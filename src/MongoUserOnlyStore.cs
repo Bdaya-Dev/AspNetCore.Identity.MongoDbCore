@@ -10,80 +10,47 @@ using System.Threading.Tasks;
 using MongoDB.Driver;
 using AspNetCore.Identity.MongoDbCore.Extensions;
 using AspNetCore.Identity.MongoDbCore.Models;
-using AspNetCore.Identity.MongoDbCore.Infrastructure;
 using Microsoft.AspNetCore.Identity;
+using MongoDB.Entities;
+using System.Linq.Expressions;
+using System.Reflection;
 
 namespace AspNetCore.Identity.MongoDbCore
 {
-    /// <summary>
-    /// Creates a new instance of a persistence store for the specified user type.
-    /// </summary>
-    /// <typeparam name="TUser">The type representing a user.</typeparam>
-    public class MongoUserOnlyStore<TUser> : MongoUserOnlyStore<TUser,  string> 
-        where TUser : MongoIdentityUser<string>, new()
+    /// <inheritdoc/>
+    public class MongoUserOnlyStore : MongoUserOnlyStore<MongoIdentityUser, DBContext>
     {
-        /// <summary>
-        /// Constructs a new instance of <see cref="MongoUserOnlyStore{TUser}"/>.
-        /// </summary>
-        /// <param name="context">The <see cref="IMongoDbContext"/>.</param>
-        /// <param name="describer">The <see cref="IdentityErrorDescriber"/>.</param>
-        public MongoUserOnlyStore(IMongoDbContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
+        /// <inheritdoc/>
+        public MongoUserOnlyStore(DBContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
     }
 
-    /// <summary>
-    /// Represents a new instance of a persistence store for the specified user and role types.
-    /// </summary>
-    /// <typeparam name="TUser">The type representing a user.</typeparam>
-    /// <typeparam name="TContext">The type of the data context class used to access the store.</typeparam>
-    public class MongoUserOnlyStore<TUser, TContext> : MongoUserOnlyStore<TUser, TContext, string>
-        where TUser : MongoIdentityUser<string>
-        where TContext : IMongoDbContext
+    /// <inheritdoc/>
+    public class MongoUserOnlyStore<TUser> : MongoUserOnlyStore<TUser, DBContext>
+        where TUser : MongoIdentityUser, new()
     {
-        /// <summary>
-        /// Constructs a new instance of <see cref="MongoUserOnlyStore{TUser, TContext}"/>.
-        /// </summary>
-        /// <param name="context">The <see cref="IMongoDbContext"/>.</param>
-        /// <param name="describer">The <see cref="IdentityErrorDescriber"/>.</param>
+        /// <inheritdoc/>
+        public MongoUserOnlyStore(DBContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
+    }
+
+    /// <inheritdoc/>
+    public class MongoUserOnlyStore<TUser, TContext> : MongoUserOnlyStore<TUser, TContext, IdentityUserClaim<string>, IdentityUserLogin<string>, IdentityUserToken<string>>
+        where TUser : MongoIdentityUser
+        where TContext : DBContext
+    {
+        /// <inheritdoc/>
         public MongoUserOnlyStore(TContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
     }
 
-    /// <summary>
-    /// Represents a new instance of a persistence store for the specified user and role types.
-    /// </summary>
-    /// <typeparam name="TUser">The type representing a user.</typeparam>
-    /// <typeparam name="TContext">The type of the data context class used to access the store.</typeparam>
-    /// <typeparam name="TKey">The type of the primary key for a role.</typeparam>
-    public class MongoUserOnlyStore<TUser, TContext, TKey> : MongoUserOnlyStore<TUser, TContext, TKey, IdentityUserClaim<TKey>, IdentityUserLogin<TKey>, IdentityUserToken<TKey>>
-        where TUser : MongoIdentityUser<TKey>
-        where TContext : IMongoDbContext
-        where TKey : IEquatable<TKey>
-    {
-        /// <summary>
-        /// Constructs a new instance of <see cref="MongoUserOnlyStore{TUser, TContext, TKey}"/>.
-        /// </summary>
-        /// <param name="context">The <see cref="IMongoDbContext"/>.</param>
-        /// <param name="describer">The <see cref="IdentityErrorDescriber"/>.</param>
-        public MongoUserOnlyStore(TContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
-    }
 
-    /// <summary>
-    /// Represents a new instance of a persistence store for the specified user and role types.
-    /// </summary>
-    /// <typeparam name="TUser">The type representing a user.</typeparam>
-    /// <typeparam name="TContext">The type of the data context class used to access the store.</typeparam>
-    /// <typeparam name="TKey">The type of the primary key for a role.</typeparam>
-    /// <typeparam name="TUserClaim">The type representing a claim.</typeparam>
-    /// <typeparam name="TUserLogin">The type representing a user external login.</typeparam>
-    /// <typeparam name="TUserToken">The type representing a user token.</typeparam>
-    public class MongoUserOnlyStore<TUser, TContext, TKey, TUserClaim, TUserLogin, TUserToken> :
-        UserStoreBase<TUser, TKey, TUserClaim, TUserLogin, TUserToken>,
+    /// <inheritdoc/>
+    public class MongoUserOnlyStore<TUser, TContext, TUserClaim, TUserLogin, TUserToken> :
+        UserStoreBase<TUser, string, TUserClaim, TUserLogin, TUserToken>,
         IUserAuthenticationTokenStore<TUser>
-        where TUser : MongoIdentityUser<TKey>
-        where TContext : IMongoDbContext
-        where TKey : IEquatable<TKey>
-        where TUserClaim : IdentityUserClaim<TKey>, new()
-        where TUserLogin : IdentityUserLogin<TKey>, new()
-        where TUserToken : IdentityUserToken<TKey>, new()
+        where TUser : MongoIdentityUser
+        where TContext : DBContext
+        where TUserClaim : IdentityUserClaim<string>, new()
+        where TUserLogin : IdentityUserLogin<string>, new()
+        where TUserToken : IdentityUserToken<string>, new()
     {
         /// <summary>
         /// Creates a new instance of the store.
@@ -92,11 +59,7 @@ namespace AspNetCore.Identity.MongoDbCore
         /// <param name="describer">The <see cref="IdentityErrorDescriber"/> used to describe store errors.</param>
         public MongoUserOnlyStore(TContext context, IdentityErrorDescriber describer = null) : base(describer ?? new IdentityErrorDescriber())
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-            Context = context;
+            Context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         /// <summary>
@@ -104,20 +67,6 @@ namespace AspNetCore.Identity.MongoDbCore
         /// </summary>
         private static TContext Context { get; set; }
 
-        private static IMongoRepository _mongoRepository;
-        private static IMongoRepository MongoRepository
-        {
-            get
-            {
-                if (_mongoRepository == null)
-                {
-                    _mongoRepository = new MongoRepository(Context);
-                }
-                return _mongoRepository;
-            }
-        }
-
-        private IMongoCollection<TUser> UsersCollection { get { return Context.GetCollection<TUser>(); } }
 
         /// <summary>
         /// Gets or sets a flag indicating if changes should be persisted after CreateAsync, UpdateAsync and DeleteAsync are called.
@@ -135,12 +84,7 @@ namespace AspNetCore.Identity.MongoDbCore
             return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Creates the specified <paramref name="user"/> in the user store.
-        /// </summary>
-        /// <param name="user">The user to create.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation, containing the <see cref="IdentityResult"/> of the creation operation.</returns>
+        /// <inheritdoc/>
         public async override Task<IdentityResult> CreateAsync(TUser user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -149,17 +93,12 @@ namespace AspNetCore.Identity.MongoDbCore
             {
                 throw new ArgumentNullException(nameof(user));
             }
-            await UsersCollection.InsertOneAsync(user);
+            await Context.SaveAsync(user, cancellationToken);
             await SaveChanges(cancellationToken);
             return IdentityResult.Success;
         }
 
-        /// <summary>
-        /// Updates the specified <paramref name="user"/> in the user store.
-        /// </summary>
-        /// <param name="user">The user to update.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation, containing the <see cref="IdentityResult"/> of the update operation.</returns>
+        /// <inheritdoc/>
         public async override Task<IdentityResult> UpdateAsync(TUser user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -170,22 +109,17 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             var oldStamp = user.ConcurrencyStamp;
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            var updateRes = await UsersCollection.ReplaceOneAsync(x => x.Id.Equals(user.Id) 
-                                                               && x.ConcurrencyStamp.Equals(oldStamp), 
-                                                             user);
-            if(updateRes.ModifiedCount == 0)
+            var updateRes = await Context.Replace<TUser>().Match(x => x.Id.Equals(user.Id) && x.ConcurrencyStamp.Equals(oldStamp)).WithEntity(user).ExecuteAsync(cancellationToken);
+
+            if (updateRes.ModifiedCount == 0)
             {
                 return IdentityResult.Failed(ErrorDescriber.ConcurrencyFailure());
             }
+
             return IdentityResult.Success;
         }
 
-        /// <summary>
-        /// Deletes the specified <paramref name="user"/> from the user store.
-        /// </summary>
-        /// <param name="user">The user to delete.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation, containing the <see cref="IdentityResult"/> of the update operation.</returns>
+        /// <inheritdoc/>
         public async override Task<IdentityResult> DeleteAsync(TUser user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -200,8 +134,8 @@ namespace AspNetCore.Identity.MongoDbCore
             user.Tokens.Clear();
             var oldStamp = user.ConcurrencyStamp;
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            var deleteRes = await UsersCollection.DeleteOneAsync(x => x.Id.Equals(user.Id)
-                                                              && x.ConcurrencyStamp.Equals(oldStamp));
+            var deleteRes = await Context.DeleteAsync<TUser>(x => x.Id.Equals(user.Id)
+                                                              && x.ConcurrencyStamp.Equals(oldStamp), cancellationToken);
             if (deleteRes.DeletedCount == 0)
             {
                 return IdentityResult.Failed(ErrorDescriber.ConcurrencyFailure());
@@ -209,117 +143,76 @@ namespace AspNetCore.Identity.MongoDbCore
             return IdentityResult.Success;
         }
 
-        /// <summary>
-        /// Finds and returns a user, if any, who has the specified <paramref name="userId"/>.
-        /// </summary>
-        /// <param name="userId">The user ID to search for.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>
-        /// The <see cref="Task"/> that represents the asynchronous operation, containing the user matching the specified <paramref name="userId"/> if it exists.
-        /// </returns>
+        /// <inheritdoc/>
         public override Task<TUser> FindByIdAsync(string userId, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            var id = ConvertIdFromString(userId);
-            return MongoRepository.GetByIdAsync<TUser, TKey>(id);
+            return Context.Find<TUser>().OneAsync(userId, cancellationToken);
         }
 
-        /// <summary>
-        /// Finds and returns a user, if any, who has the specified normalized user name.
-        /// </summary>
-        /// <param name="normalizedUserName">The normalized user name to search for.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>
-        /// The <see cref="Task"/> that represents the asynchronous operation, containing the user matching the specified <paramref name="normalizedUserName"/> if it exists.
-        /// </returns>
+        /// <inheritdoc/>
         public override Task<TUser> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            return MongoRepository.GetOneAsync<TUser, TKey>(u => u.NormalizedUserName == normalizedUserName);
+            return Context.Find<TUser>().Match(u => u.NormalizedUserName == normalizedUserName).ExecuteFirstAsync(cancellationToken);
         }
 
-        /// <summary>
-        /// A navigation property for the users the store contains.
-        /// </summary>
+        /// <inheritdoc/>
         public override IQueryable<TUser> Users
         {
-            get { return UsersCollection.AsQueryable(); }
+            get { return Context.Queryable<TUser>(); }
         }
 
-        /// <summary>
-        /// Return a user with the matching userId if it exists.
-        /// </summary>
-        /// <param name="userId">The user's id.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The user if it exists.</returns>
-        protected override Task<TUser> FindUserAsync(TKey userId, CancellationToken cancellationToken)
+
+
+        /// <inheritdoc/>
+        protected override Task<TUser> FindUserAsync(string userId, CancellationToken cancellationToken)
         {
-            return MongoRepository.GetOneAsync<TUser, TKey>(u => u.Id.Equals(userId));
+            return Context.Find<TUser>().Match(u => userId).ExecuteFirstAsync(cancellationToken);
         }
 
-        /// <summary>
-        /// Return a user login with the matching userId, provider, providerKey if it exists.
-        /// </summary>
-        /// <param name="userId">The user's id.</param>
-        /// <param name="loginProvider">The login provider name.</param>
-        /// <param name="providerKey">The key provided by the <paramref name="loginProvider"/> to identify a user.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The user login if it exists.</returns>
-        protected override Task<TUserLogin> FindUserLoginAsync(TKey userId, string loginProvider, string providerKey, CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        protected override async Task<TUserLogin> FindUserLoginAsync(string userId, string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
-            var user = MongoRepository.GetOne<TUser, TKey>(x => x.Id.Equals(userId) && x.Logins.Any(e => e.LoginProvider == loginProvider && e.ProviderKey == providerKey));
+            var user = await Context.Find<TUser>().Match(x => x.Id.Equals(userId) && x.Logins.Any(e => e.LoginProvider == loginProvider && e.ProviderKey == providerKey)).ExecuteFirstAsync(cancellationToken);
             if (user != null)
             {
-                return Task.FromResult((TUserLogin)user.GetUserLogin(loginProvider, providerKey));
+                return (TUserLogin)user.GetUserLogin(loginProvider, providerKey);
             }
-            return Task.FromResult(default(TUserLogin));
+            return default;
         }
 
-        /// <summary>
-        /// Return a user login with  provider, providerKey if it exists.
-        /// </summary>
-        /// <param name="loginProvider">The login provider name.</param>
-        /// <param name="providerKey">The key provided by the <paramref name="loginProvider"/> to identify a user.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The user login if it exists.</returns>
-        protected override Task<TUserLogin> FindUserLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
+        /// <inheritdoc/>
+        protected override async Task<TUserLogin> FindUserLoginAsync(string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
-            var user = MongoRepository.GetOne<TUser, TKey>(x => x.Logins.Any(e => e.LoginProvider == loginProvider && e.ProviderKey == providerKey));
+            var user = await Context.Find<TUser>().Match(x => x.Logins.Any(e => e.LoginProvider == loginProvider && e.ProviderKey == providerKey)).ExecuteFirstAsync(cancellationToken);
             if (user != null)
             {
-                return Task.FromResult((TUserLogin)user.GetUserLogin(loginProvider, providerKey));
+                return (TUserLogin)user.GetUserLogin(loginProvider, providerKey);
             }
-            return Task.FromResult(default(TUserLogin));
+            return default;
         }
 
-#pragma warning disable CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
-                              /// <summary>
-                              /// Get the claims associated with the specified <paramref name="user"/> as an asynchronous operation.
-                              /// </summary>
-                              /// <param name="user">The user whose claims should be retrieved.</param>
-                              /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-                              /// <returns>A <see cref="Task{TResult}"/> that contains the claims granted to a user.</returns>
-        public async override Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
+
+
+
+
+
+        /// <inheritdoc/>
+        public override Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             if (user == null)
             {
                 throw new ArgumentNullException(nameof(user));
             }
-            return user.Claims.Select(e => e.ToClaim()).ToList();
+            return Task.FromResult(user.Claims.Select(e => e.ToClaim()).ToList() as IList<Claim>);
         }
 
-        /// <summary>
-        /// Adds the <paramref name="claims"/> given to the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user to add the claim to.</param>
-        /// <param name="claims">The claim to add to the user.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-        public override Task AddClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken = default)
+        /// <inheritdoc/>
+        public override async Task AddClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
             if (user == null)
@@ -340,23 +233,15 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             if (addedSome)
             {
-                var success = MongoRepository.UpdateOne<TUser, TKey, List<MongoClaim>>(user, p => p.Claims, user.Claims);
-                if (!success)
+                var op = await Context.Update<TUser>().MatchID(user.ID).Modify(p => p.Claims, user.Claims).ExecuteAsync();
+                if (!op.IsAcknowledged)
                 {
-                    throw new Exception($"Failed to add claims to user {user.Id.ToString()}");
+                    throw new Exception($"Failed to add claims to user {user.Id}");
                 }
             }
-            return Task.FromResult(false);
         }
 
-        /// <summary>
-        /// Replaces the <paramref name="claim"/> on the specified <paramref name="user"/>, with the <paramref name="newClaim"/>.
-        /// </summary>
-        /// <param name="user">The user to replace the claim on.</param>
-        /// <param name="claim">The claim replace.</param>
-        /// <param name="newClaim">The new claim replacing the <paramref name="claim"/>.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc/>
         public async override Task ReplaceClaimAsync(TUser user, Claim claim, Claim newClaim, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -375,17 +260,11 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.ReplaceClaim(claim, newClaim))
             {
-                await MongoRepository.UpdateOneAsync<TUser, TKey, List<MongoClaim>>(user, e => e.Claims, user.Claims);
+                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Claims, user.Claims).ExecuteAsync();
             }
         }
 
-        /// <summary>
-        /// Removes the <paramref name="claims"/> given from the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user to remove the claims from.</param>
-        /// <param name="claims">The claim to remove.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc/>
         public async override Task RemoveClaimsAsync(TUser user, IEnumerable<Claim> claims, CancellationToken cancellationToken = default)
         {
             ThrowIfDisposed();
@@ -399,19 +278,12 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             if (user.RemoveClaims(claims))
             {
-                await MongoRepository.UpdateOneAsync<TUser, TKey, List<MongoClaim>>(user, e => e.Claims, user.Claims);
+                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Claims, user.Claims).ExecuteAsync();
             }
         }
 
-        /// <summary>
-        /// Adds the <paramref name="login"/> given to the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user to add the login to.</param>
-        /// <param name="login">The login to add to the user.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-        public override Task AddLoginAsync(TUser user, UserLoginInfo login,
-            CancellationToken cancellationToken = default)
+        /// <inheritdoc/>
+        public override async Task AddLoginAsync(TUser user, UserLoginInfo login, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -428,24 +300,13 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.AddLogin(login))
             {
-                MongoRepository.UpdateOne<TUser, TKey, List<UserLoginInfo>>(user, e => e.Logins, user.Logins);
+                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Logins, user.Logins).ExecuteAsync();
             }
-
-            return Task.FromResult(false);
         }
 
-#pragma warning disable CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
-                              /// <summary>
-                              /// Removes the <paramref name="loginProvider"/> given from the specified <paramref name="user"/>.
-                              /// </summary>
-                              /// <param name="user">The user to remove the login from.</param>
-                              /// <param name="loginProvider">The login to remove from the user.</param>
-                              /// <param name="providerKey">The key provided by the <paramref name="loginProvider"/> to identify a user.</param>
-                              /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-                              /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-        public override async Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey,
-#pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
-            CancellationToken cancellationToken = default)
+
+        /// <inheritdoc/>
+        public override Task RemoveLoginAsync(TUser user, string loginProvider, string providerKey, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -458,19 +319,11 @@ namespace AspNetCore.Identity.MongoDbCore
             {
                 user.RemoveLogin(entry);
             }
+            return Task.CompletedTask;
         }
 
-#pragma warning disable CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
-                              /// <summary>
-                              /// Retrieves the associated logins for the specified <param ref="user"/>.
-                              /// </summary>
-                              /// <param name="user">The user whose associated logins to retrieve.</param>
-                              /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-                              /// <returns>
-                              /// The <see cref="Task"/> for the asynchronous operation, containing a list of <see cref="UserLoginInfo"/> for the specified <paramref name="user"/>, if any.
-                              /// </returns>
-        public async override Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken = default)
-#pragma warning restore CS1998 // Cette méthode async n'a pas d'opérateur 'await' et elle s'exécutera de façon synchrone
+        /// <inheritdoc/>
+        public override Task<IList<UserLoginInfo>> GetLoginsAsync(TUser user, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
@@ -478,18 +331,10 @@ namespace AspNetCore.Identity.MongoDbCore
             {
                 throw new ArgumentNullException(nameof(user));
             }
-            return user.Logins.ToList();
+            return Task.FromResult(user.Logins.ToList() as IList<UserLoginInfo>);
         }
 
-        /// <summary>
-        /// Retrieves the user associated with the specified login provider and login provider key.
-        /// </summary>
-        /// <param name="loginProvider">The login provider who provided the <paramref name="providerKey"/>.</param>
-        /// <param name="providerKey">The key provided by the <paramref name="loginProvider"/> to identify a user.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>
-        /// The <see cref="Task"/> for the asynchronous operation, containing the user, if any which matched the specified login provider and key.
-        /// </returns>
+        /// <inheritdoc/>
         public async override Task<TUser> FindByLoginAsync(string loginProvider, string providerKey,
             CancellationToken cancellationToken = default)
         {
@@ -503,29 +348,15 @@ namespace AspNetCore.Identity.MongoDbCore
             return null;
         }
 
-        /// <summary>
-        /// Gets the user, if any, associated with the specified, normalized email address.
-        /// </summary>
-        /// <param name="normalizedEmail">The normalized email address to return the user for.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>
-        /// The task object containing the results of the asynchronous lookup operation, the user if any associated with the specified normalized email address.
-        /// </returns>
+        /// <inheritdoc/>
         public override Task<TUser> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            return MongoRepository.GetOneAsync<TUser, TKey>(u => u.NormalizedEmail == normalizedEmail);
+            return Context.Find<TUser>().Match(u => u.NormalizedEmail == normalizedEmail).ExecuteFirstAsync(cancellationToken);
         }
 
-        /// <summary>
-        /// Retrieves all users with the specified claim.
-        /// </summary>
-        /// <param name="claim">The claim whose users should be retrieved.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>
-        /// The <see cref="Task"/> contains a list of users, if any, that contain the specified claim. 
-        /// </returns>
+        /// <inheritdoc/>
         public async override Task<IList<TUser>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken = default)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -534,453 +365,197 @@ namespace AspNetCore.Identity.MongoDbCore
             {
                 throw new ArgumentNullException(nameof(claim));
             }
-            var filter = Builders<TUser>.Filter.ElemMatch(x => x.Claims, userClaims => userClaims.Value.Equals(claim.Value)
-                                                                                    && userClaims.Type.Equals(claim.Type));
-            var cursor = UsersCollection.Find(filter);
-            var res = await cursor.ToListAsync();
-            return res;
+
+            return await Context.Find<TUser>()
+                .Match(fb => fb.ElemMatch(x => x.Claims, userClaims => userClaims.Value.Equals(claim.Value) && userClaims.Type.Equals(claim.Type))).ExecuteAsync(cancellationToken);
+
         }
+
 
         #region Token Management
 
-        /// <summary>
-        /// Find a user token if it exists.
-        /// </summary>
-        /// <param name="user">The token owner.</param>
-        /// <param name="loginProvider">The login provider for the token.</param>
-        /// <param name="name">The name of the token.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The user token if it exists.</returns>
+        /// <inheritdoc/>
         protected override Task<TUserToken> FindTokenAsync(TUser user, string loginProvider, string name, CancellationToken cancellationToken)
         {
             return Task.FromResult((TUserToken)user.GetToken(loginProvider, name));
         }
 
-        /// <summary>
-        /// Add a new user token.
-        /// </summary>
-        /// <param name="token">The token to be added.</param>
-        /// <returns></returns>
-        protected override Task AddUserTokenAsync(TUserToken token)
+        /// <inheritdoc/>
+        protected override async Task AddUserTokenAsync(TUserToken token)
         {
-            var user = MongoRepository.GetById<TUser, TKey>(token.UserId);
+            var user = await Context.Find<TUser>().MatchID(token.UserId).ExecuteFirstAsync();
             if (user != null)
             {
                 if (user.AddUserToken(token))
                 {
-                    MongoRepository.UpdateOne<TUser, TKey, List<Token>>(user, e => e.Tokens, user.Tokens);
+                    await Context.Update<TUser>().MatchID(token.UserId).Modify(e => e.Tokens, user.Tokens).ExecuteAsync();
                 }
             }
-            return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Remove a new user token.
-        /// </summary>
-        /// <param name="token">The token to be removed.</param>
-        /// <returns></returns>
-        protected override Task RemoveUserTokenAsync(TUserToken token)
+        /// <inheritdoc/>
+        protected override async Task RemoveUserTokenAsync(TUserToken token)
         {
-            var user = MongoRepository.GetById<TUser, TKey>(token.UserId);
+            var user = await Context.Find<TUser>().MatchID(token.UserId).ExecuteFirstAsync();
             if (user != null)
             {
                 if (user.RemoveUserToken(token))
                 {
-                    MongoRepository.UpdateOne<TUser, TKey, List<Token>>(user, e => e.Tokens, user.Tokens);
+                    await Context.Update<TUser>().MatchID(token.UserId).Modify(e => e.Tokens, user.Tokens).ExecuteAsync();
                 }
             }
-            return Task.CompletedTask;
         }
 
         #endregion Token Management
 
         #region UserStoreBase overrides
+        private async Task<T> SetBase<T>(TUser user, Expression<Func<TUser, T>> expression, T value, CancellationToken cancellationToken = default, bool ignoreCheck = false)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ThrowIfDisposed();
+            if (user == null)
+            {
+                throw new ArgumentNullException(nameof(user));
+            }
+            var compiled = expression.Compile();
+            async Task common()
+            {
+                var memberExpression = (MemberExpression)expression.Body;
+                var member = (PropertyInfo)memberExpression.Member;
+                member.SetValue(user, value);
+                await Context.Update<TUser>().MatchID(user.ID).Modify(expression, value).ExecuteAsync(cancellationToken);
+            }
+            if (ignoreCheck)
+            {
+                await common();
+            }
+            else
+            {
+                if (!EqualityComparer<T>.Default.Equals(compiled(user), value))
+                {
+                    await common();
+                }
+            }
+            return value;
+        }
 
-        /// <summary>
-        /// Sets the given <paramref name="userName" /> for the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user whose name should be set.</param>
-        /// <param name="userName">The user name to set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetUserNameAsync(TUser user, string userName, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.UserName != userName)
-            {
-                user.UserName = userName;
-                MongoRepository.UpdateOne<TUser, TKey, string>(user, e => e.UserName, user.UserName);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.UserName, userName, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets the given normalized name for the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user whose name should be set.</param>
-        /// <param name="normalizedName">The normalized name to set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetNormalizedUserNameAsync(TUser user, string normalizedName, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.NormalizedUserName != normalizedName)
-            {
-                user.NormalizedUserName = normalizedName;
-                MongoRepository.UpdateOne<TUser, TKey, string>(user, e => e.NormalizedUserName, user.NormalizedUserName);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.NormalizedUserName, normalizedName, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets the password hash for a user.
-        /// </summary>
-        /// <param name="user">The user to set the password hash for.</param>
-        /// <param name="passwordHash">The password hash to set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetPasswordHashAsync(TUser user, string passwordHash, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.PasswordHash != passwordHash)
-            {
-                user.PasswordHash = passwordHash;
-                MongoRepository.UpdateOne<TUser, TKey, string>(user, e => e.PasswordHash, user.PasswordHash);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.PasswordHash, passwordHash, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets the flag indicating whether the specified <paramref name="user"/>'s email address has been confirmed or not.
-        /// </summary>
-        /// <param name="user">The user whose email confirmation status should be set.</param>
-        /// <param name="confirmed">A flag indicating if the email address has been confirmed, true if the address is confirmed otherwise false.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetEmailConfirmedAsync(TUser user, bool confirmed, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-            if (user.EmailConfirmed != confirmed)
-            {
-                user.EmailConfirmed = confirmed;
-                MongoRepository.UpdateOne<TUser, TKey, bool>(user, e => e.EmailConfirmed, user.EmailConfirmed);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.EmailConfirmed, confirmed, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets the <paramref name="email"/> address for a <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user whose email should be set.</param>
-        /// <param name="email">The email to set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetEmailAsync(TUser user, string email, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.Email != email)
-            {
-                user.Email = email;
-                MongoRepository.UpdateOne<TUser, TKey, string>(user, e => e.Email, user.Email);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.Email, email, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets the normalized email for the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user whose email address to set.</param>
-        /// <param name="normalizedEmail">The normalized email to set for the specified <paramref name="user"/>.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The task object representing the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetNormalizedEmailAsync(TUser user, string normalizedEmail, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.NormalizedEmail != normalizedEmail)
-            {
-                user.NormalizedEmail = normalizedEmail;
-                MongoRepository.UpdateOne<TUser, TKey, string>(user, e => e.NormalizedEmail, user.NormalizedEmail);
-            }
-            user.NormalizedEmail = normalizedEmail;
-            return Task.CompletedTask;
+            return SetBase(user, e => e.NormalizedEmail, normalizedEmail, cancellationToken);
         }
 
-        /// <summary>
-        /// Locks out a user until the specified end date has passed. Setting a end date in the past immediately unlocks a user.
-        /// </summary>
-        /// <param name="user">The user whose lockout date should be set.</param>
-        /// <param name="lockoutEnd">The <see cref="DateTimeOffset"/> after which the <paramref name="user"/>'s lockout should end.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetLockoutEndDateAsync(TUser user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.LockoutEnd != lockoutEnd)
-            {
-                user.LockoutEnd = lockoutEnd;
-                MongoRepository.UpdateOne<TUser, TKey, DateTimeOffset?>(user, e => e.LockoutEnd, user.LockoutEnd);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.LockoutEnd, lockoutEnd, cancellationToken);
         }
 
-        /// <summary>
-        /// Records that a failed access has occurred, incrementing the failed access count.
-        /// </summary>
-        /// <param name="user">The user whose cancellation count should be incremented.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation, containing the incremented failed access count.</returns>
+        /// <inheritdoc />
         public override Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-            user.AccessFailedCount++;
-            MongoRepository.UpdateOne<TUser, TKey, int>(user, e => e.AccessFailedCount, user.AccessFailedCount);
-            return Task.FromResult(user.AccessFailedCount);
+            return SetBase(user, e => e.AccessFailedCount, user.AccessFailedCount + 1, cancellationToken);
         }
 
-        /// <summary>
-        /// Resets a user's failed access count.
-        /// </summary>
-        /// <param name="user">The user whose failed access count should be reset.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
-        /// <remarks>This is typically called after the account is successfully accessed.</remarks>
+        /// <inheritdoc />
         public override Task ResetAccessFailedCountAsync(TUser user, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.AccessFailedCount != 0)
-            {
-                user.AccessFailedCount = 0;
-                MongoRepository.UpdateOne<TUser, TKey, int>(user, e => e.AccessFailedCount, user.AccessFailedCount);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.AccessFailedCount, 0, cancellationToken);
         }
 
-        /// <summary>
-        /// Set the flag indicating if the specified <paramref name="user"/> can be locked out..
-        /// </summary>
-        /// <param name="user">The user whose ability to be locked out should be set.</param>
-        /// <param name="enabled">A flag indicating if lock out can be enabled for the specified <paramref name="user"/>.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetLockoutEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.LockoutEnabled != enabled)
-            {
-                user.LockoutEnabled = enabled;
-                MongoRepository.UpdateOne<TUser, TKey, bool>(user, e => e.LockoutEnabled, user.LockoutEnabled);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.LockoutEnabled, enabled, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets the telephone number for the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user whose telephone number should be set.</param>
-        /// <param name="phoneNumber">The telephone number to set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetPhoneNumberAsync(TUser user, string phoneNumber, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-            if (user.PhoneNumber != phoneNumber)
-            {
-                user.PhoneNumber = phoneNumber;
-                MongoRepository.UpdateOne<TUser, TKey, string>(user, e => e.PhoneNumber, user.PhoneNumber);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.PhoneNumber, phoneNumber, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets a flag indicating if the specified <paramref name="user"/>'s phone number has been confirmed..
-        /// </summary>
-        /// <param name="user">The user whose telephone number confirmation status should be set.</param>
-        /// <param name="confirmed">A flag indicating whether the user's telephone number has been confirmed.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetPhoneNumberConfirmedAsync(TUser user, bool confirmed, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-
-            if (user.PhoneNumberConfirmed != confirmed)
-            {
-                user.PhoneNumberConfirmed = confirmed;
-                MongoRepository.UpdateOne<TUser, TKey, bool>(user, e => e.PhoneNumberConfirmed, user.PhoneNumberConfirmed);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.PhoneNumberConfirmed, confirmed, cancellationToken);
         }
 
 
-        /// <summary>
-        /// Sets the provided security <paramref name="stamp"/> for the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user whose security stamp should be set.</param>
-        /// <param name="stamp">The security stamp to set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetSecurityStampAsync(TUser user, string stamp, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-            if (stamp == null)
-            {
-                throw new ArgumentNullException(nameof(stamp));
-            }
-
-            if (user.SecurityStamp != stamp)
-            {
-                user.SecurityStamp = stamp;
-                MongoRepository.UpdateOne<TUser, TKey, string>(user, e => e.SecurityStamp, user.SecurityStamp);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.SecurityStamp, stamp, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets a flag indicating whether the specified <paramref name="user"/> has two factor authentication enabled or not,
-        /// as an asynchronous operation.
-        /// </summary>
-        /// <param name="user">The user whose two factor authentication enabled status should be set.</param>
-        /// <param name="enabled">A flag indicating whether the specified <paramref name="user"/> has two factor authentication enabled.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc />
         public override Task SetTwoFactorEnabledAsync(TUser user, bool enabled, CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-            if (user == null)
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-            if (user.TwoFactorEnabled != enabled)
-            {
-                user.TwoFactorEnabled = enabled;
-                MongoRepository.UpdateOne<TUser, TKey, bool>(user, e => e.TwoFactorEnabled, user.TwoFactorEnabled);
-            }
-            return Task.CompletedTask;
+            return SetBase(user, e => e.TwoFactorEnabled, enabled, cancellationToken);
         }
 
-        /// <summary>
-        /// Sets the token value for a particular user.
-        /// </summary>
-        /// <param name="user">The user.</param>
-        /// <param name="loginProvider">The authentication provider for the token.</param>
-        /// <param name="name">The name of the token.</param>
-        /// <param name="value">The value of the token.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc/>
         public override async Task SetTokenAsync(TUser user, string loginProvider, string name, string value, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-
             if (user == null)
             {
                 throw new ArgumentNullException(nameof(user));
             }
 
+            Task common()
+            {
+                return SetBase(user, e => e.Tokens, user.Tokens, cancellationToken: cancellationToken, ignoreCheck: true);
+            }
             var token = await FindTokenAsync(user, loginProvider, name, cancellationToken);
             if (token == null)
             {
                 if (user.AddUserToken(CreateUserToken(user, loginProvider, name, value)))
                 {
-                    MongoRepository.UpdateOne<TUser, TKey, List<Token>>(user, e => e.Tokens, user.Tokens);
+                    await common();
                 }
-                //await AddUserTokenAsync(CreateUserToken(user, loginProvider, name, value));
             }
             else
             {
                 if (user.SetToken(token, value))
                 {
-                    MongoRepository.UpdateOne<TUser, TKey, List<Token>>(user, e => e.Tokens, user.Tokens);
+                    await common();
                 }
             }
         }
 
-        /// <summary>
-        /// Deletes a token for a user.
-        /// </summary>
-        /// <param name="user">The user.</param>
-        /// <param name="loginProvider">The authentication provider for the token.</param>
-        /// <param name="name">The name of the token.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc/>
         public override async Task RemoveTokenAsync(TUser user, string loginProvider, string name, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ThrowIfDisposed();
-
             if (user == null)
             {
                 throw new ArgumentNullException(nameof(user));
@@ -990,19 +565,12 @@ namespace AspNetCore.Identity.MongoDbCore
             {
                 if (user.RemoveUserToken(entry))
                 {
-                    MongoRepository.UpdateOne<TUser, TKey, List<Token>>(user, e => e.Tokens, user.Tokens);
+                    await SetBase(user, e => e.Tokens, user.Tokens, cancellationToken: cancellationToken, ignoreCheck: true);
                 }
             }
         }
 
-        /// <summary>
-        /// Returns the token value.
-        /// </summary>
-        /// <param name="user">The user.</param>
-        /// <param name="loginProvider">The authentication provider for the token.</param>
-        /// <param name="name">The name of the token.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc/>       
         public override async Task<string> GetTokenAsync(TUser user, string loginProvider, string name, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -1020,31 +588,15 @@ namespace AspNetCore.Identity.MongoDbCore
         private const string AuthenticatorKeyTokenName = "AuthenticatorKey";
         private const string RecoveryCodeTokenName = "RecoveryCodes";
 
-        /// <summary>
-        /// Sets the authenticator key for the specified <paramref name="user"/>.
-        /// </summary>
-        /// <param name="user">The user whose authenticator key should be set.</param>
-        /// <param name="key">The authenticator key to set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
+        /// <inheritdoc/>       
         public override Task SetAuthenticatorKeyAsync(TUser user, string key, CancellationToken cancellationToken)
             => SetTokenAsync(user, InternalLoginProvider, AuthenticatorKeyTokenName, key, cancellationToken);
 
-        /// <summary>
-        /// Get the authenticator key for the specified <paramref name="user" />.
-        /// </summary>
-        /// <param name="user">The user whose security stamp should be set.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The <see cref="Task"/> that represents the asynchronous operation, containing the security stamp for the specified <paramref name="user"/>.</returns>
+        /// <inheritdoc/>       
         public override Task<string> GetAuthenticatorKeyAsync(TUser user, CancellationToken cancellationToken)
             => GetTokenAsync(user, InternalLoginProvider, AuthenticatorKeyTokenName, cancellationToken);
 
-        /// <summary>
-        /// Returns how many recovery code are still valid for a user.
-        /// </summary>
-        /// <param name="user">The user who owns the recovery code.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The number of valid recovery codes for the user..</returns>
+        /// <inheritdoc/>       
         public override async Task<int> CountCodesAsync(TUser user, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -1062,27 +614,14 @@ namespace AspNetCore.Identity.MongoDbCore
             return 0;
         }
 
-        /// <summary>
-        /// Updates the recovery codes for the user while invalidating any previous recovery codes.
-        /// </summary>
-        /// <param name="user">The user to store new recovery codes for.</param>
-        /// <param name="recoveryCodes">The new recovery codes for the user.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>The new recovery codes for the user.</returns>
+        /// <inheritdoc/>       
         public override Task ReplaceCodesAsync(TUser user, IEnumerable<string> recoveryCodes, CancellationToken cancellationToken)
         {
             var mergedCodes = string.Join(";", recoveryCodes);
             return SetTokenAsync(user, InternalLoginProvider, RecoveryCodeTokenName, mergedCodes, cancellationToken);
         }
 
-        /// <summary>
-        /// Returns whether a recovery code is valid for a user. Note: recovery codes are only valid
-        /// once, and will be invalid after use.
-        /// </summary>
-        /// <param name="user">The user who owns the recovery code.</param>
-        /// <param name="code">The recovery code to use.</param>
-        /// <param name="cancellationToken">The <see cref="CancellationToken"/> used to propagate notifications that the operation should be canceled.</param>
-        /// <returns>True if the recovery code was found for the user.</returns>
+        /// <inheritdoc/>       
         public override async Task<bool> RedeemCodeAsync(TUser user, string code, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
