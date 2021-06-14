@@ -18,15 +18,7 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.Identity.Test
 {
-    /// <summary>
-    /// Common functionality tests that all verifies user manager functionality regardless of store implementation
-    /// </summary>
-    /// <typeparam name="TUser">The type of the user.</typeparam>
-    /// <typeparam name="TRole">The type of the role.</typeparam>
-    public abstract class IdentitySpecificationTestBase<TUser, TRole> : IdentitySpecificationTestBase<TUser, TRole, string>
-        where TUser : MongoDbIdentityUser, new()
-        where TRole : MongoDbIdentityRole, new()
-    { }
+  
 
     /// <summary>
     /// Base class for tests that exercise basic identity functionality that all stores should support.
@@ -34,10 +26,9 @@ namespace Microsoft.AspNetCore.Identity.Test
     /// <typeparam name="TUser">The type of the user.</typeparam>
     /// <typeparam name="TRole">The type of the role.</typeparam>
     /// <typeparam name="TKey">The primary key type.</typeparam>
-    public abstract class IdentitySpecificationTestBase<TUser, TRole, TKey> : UserManagerSpecificationTestBase<TUser, TKey>
-        where TUser : MongoIdentityUser<TKey>, new()
-        where TRole : MongoIdentityRole<TKey>, new()
-        where TKey : IEquatable<TKey>
+    public abstract class IdentitySpecificationTestBase<TUser, TRole> : UserManagerSpecificationTestBase<TUser>
+        where TUser : MongoIdentityUser, new()
+        where TRole : MongoIdentityRole, new()
     {
 
         /// <summary>
@@ -48,7 +39,7 @@ namespace Microsoft.AspNetCore.Identity.Test
         protected override void SetupIdentityServices(IServiceCollection services)
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            services.ConfigureMongoDbIdentity<TUser, TRole, TKey>(Container.MongoDbIdentityConfiguration, Container.MongoRepository.Context)
+            services.ConfigureMongoDbIdentity<TUser, TRole>(Container.MongoDbIdentityConfiguration, Container.MongoContext)
                     .AddDefaultTokenProviders();
             services.AddAuthentication();
 
@@ -65,16 +56,19 @@ namespace Microsoft.AspNetCore.Identity.Test
         protected void SetupIdentityServices(IServiceCollection services, bool concurrentSetup = false)
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-            if (concurrentSetup)
-            {
-                services.ConfigureMongoDbIdentity<TUser, TRole, TKey>(Container.MongoDbIdentityConfiguration, Container.MongoRepositoryConcurrent.Context)
+
+            services.ConfigureMongoDbIdentity<TUser, TRole>(Container.MongoDbIdentityConfiguration, Container.MongoContext)
                         .AddDefaultTokenProviders();
-            }
-            else
-            {
-                services.ConfigureMongoDbIdentity<TUser, TRole, TKey>(Container.MongoDbIdentityConfiguration, Container.MongoRepository.Context)
-                        .AddDefaultTokenProviders();
-            }
+            //if (concurrentSetup)
+            //{
+            //    services.ConfigureMongoDbIdentity<TUser, TRole>(Container.MongoDbIdentityConfiguration, Container.MongoContext)
+            //            .AddDefaultTokenProviders();
+            //}
+            //else
+            //{
+            //    services.ConfigureMongoDbIdentity<TUser, TRole>(Container.MongoDbIdentityConfiguration, Container.MongoContext)
+            //            .AddDefaultTokenProviders();
+            //}
 
             services.AddLogging();
             services.AddAuthentication();

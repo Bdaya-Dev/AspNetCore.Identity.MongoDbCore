@@ -1,6 +1,8 @@
 ﻿using AspNetCore.Identity.MongoDbCore.Extensions;
 using AspNetCore.Identity.MongoDbCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
+using MongoDB.Entities;
 using System;
 
 namespace AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure
@@ -21,7 +23,7 @@ namespace AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure
                                     .SetBasePath(System.Environment.CurrentDirectory)
                                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                                     //per user config that is not committed to repo, use this to override settings (e.g. connection string) based on your local environment.
-                                    .AddJsonFile($"appsettings.local.json", optional: true); 
+                                    .AddJsonFile($"appsettings.local.json", optional: true);
 
             builder.AddEnvironmentVariables();
 
@@ -44,12 +46,9 @@ namespace AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure
 
             lock (Locks.MongoInitLock)
             {
-                _mongoDbRepository = new MongoRepository(
-                                        databaseSettings.ConnectionString,
-                                        databaseSettings.DatabaseName);
-                _mongoDbRepository2 = new MongoRepository(
-                        databaseSettings.ConnectionString,
-                        databaseSettings.DatabaseName);
+                DB.InitAsync(databaseSettings.DatabaseName, MongoClientSettings.FromConnectionString(databaseSettings.ConnectionString));
+
+                _mongoDbRepository = new DBContext();
             }
         }
 
@@ -58,23 +57,15 @@ namespace AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure
         public static IServiceProvider Instance { get; set; }
 
         const string connectionString = "mongodb://localhost:27017";
-        private static readonly IMongoRepository _mongoDbRepository;
+        private static readonly DBContext _mongoDbRepository;
 
-        private static readonly IMongoRepository _mongoDbRepository2;
+        private static readonly DBContext _mongoDbRepository2;
 
-        public static IMongoRepository MongoRepository
+        public static DBContext MongoContext
         {
             get
             {
                 return _mongoDbRepository;
-            }
-        }
-
-        public static IMongoRepository MongoRepositoryConcurrent
-        {
-            get
-            {
-                return _mongoDbRepository2;
             }
         }
     }

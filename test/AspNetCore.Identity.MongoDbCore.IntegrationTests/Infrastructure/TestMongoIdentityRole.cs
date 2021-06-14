@@ -3,16 +3,18 @@ using System;
 
 namespace AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure
 {
-    public class TestMongoIdentityRole : MongoIdentityRole<Guid>
+    public class TestMongoIdentityRole : MongoIdentityRole
     {
-        public TestMongoIdentityRole() : base ()
+        public TestMongoIdentityRole() : base()
         {
-            Id = Guid.NewGuid();
         }
 
         public TestMongoIdentityRole(string roleName) : base(roleName)
         {
-            Id = Guid.NewGuid();
+        }
+
+        public TestMongoIdentityRole(string name, string key) : base(name, key)
+        {
         }
     }
 }

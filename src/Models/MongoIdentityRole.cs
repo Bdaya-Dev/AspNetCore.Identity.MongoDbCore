@@ -64,6 +64,8 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// The claims associated to the role
         /// </summary>
         public List<MongoClaim> Claims { get; set; }
-        public string ID { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+
+        /// <inheritdoc/>
+        public string ID { get => Id; set => Id = value; }
     }
 }

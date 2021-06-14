@@ -15,22 +15,21 @@ using Microsoft.AspNetCore.Identity.Test;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
-using MongoDbGenericRepository;
+using MongoDB.Entities;
 using Xunit;
 
 namespace AspNetCore.Identity.MongoDbCore.Test
 {
     // TODO: Add test variation with non IdentityDbContext
 
-    public abstract class MongoDbStoreTestBase<TUser, TRole, TKey> : IdentitySpecificationTestBase<TUser, TRole, TKey>,
-        IClassFixture<MongoDatabaseFixture<TUser, TRole, TKey>>
-        where TUser : MongoIdentityUser<TKey>, new()
-        where TRole : MongoIdentityRole<TKey>, new()
-        where TKey : IEquatable<TKey>
+    public abstract class MongoDbStoreTestBase<TUser, TRole> : IdentitySpecificationTestBase<TUser, TRole>,
+        IClassFixture<MongoDatabaseFixture<TUser, TRole>>
+        where TUser : MongoIdentityUser, new()
+        where TRole : MongoIdentityRole, new()
     {
-        private readonly MongoDatabaseFixture<TUser, TRole, TKey> _fixture;
+        private readonly MongoDatabaseFixture<TUser, TRole> _fixture;
 
-        protected MongoDbStoreTestBase(MongoDatabaseFixture<TUser, TRole, TKey> fixture)
+        protected MongoDbStoreTestBase(MongoDatabaseFixture<TUser, TRole> fixture)
         {
             _fixture = fixture;
         }
@@ -39,7 +38,7 @@ namespace AspNetCore.Identity.MongoDbCore.Test
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             // configure the default type name
-            services.ConfigureMongoDbIdentity<TUser, TRole, TKey>(Container.MongoDbIdentityConfiguration, Container.MongoRepository.Context)
+            services.ConfigureMongoDbIdentity<TUser, TRole>(Container.MongoDbIdentityConfiguration, Container.MongoContext)
                     .AddDefaultTokenProviders();
 
             services.AddAuthentication();
@@ -88,12 +87,12 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
         protected override void AddUserStore(IServiceCollection services, object context = null)
         {
-            services.AddSingleton<IUserStore<TUser>>(new MongoUserStore<TUser, TRole, IMongoDbContext, TKey>(Container.MongoRepository.Context));
+            services.AddSingleton<IUserStore<TUser>>(new MongoUserStore<TUser, TRole, DBContext>(Container.MongoContext));
         }
 
         protected override void AddRoleStore(IServiceCollection services, object context = null)
         {
-            services.AddSingleton<IRoleStore<TRole>>(new MongoRoleStore<TRole, IMongoDbContext, TKey>(Container.MongoRepository.Context));
+            services.AddSingleton<IRoleStore<TRole>>(new MongoRoleStore<TRole, DBContext>(Container.MongoContext));
         }
 
         protected override void SetUserPasswordHash(TUser user, string hashedPassword)
@@ -165,14 +164,14 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
         private IQueryable<TUser> GetQueryable()
         {
-            return Container.MongoRepository.Context.GetCollection<TUser>().AsQueryable();
+            return Container.MongoContext.Queryable<TUser>();
         }
 
         [Fact]
         public void CanCreateUserUsingEF()
         {
             var user = CreateTestUser();
-            Container.MongoRepository.AddOne<TUser, TKey>(user);
+            Container.MongoContext.SaveAsync(user);
             Assert.True(GetQueryable().Any(u => u.UserName == user.UserName));
             Assert.NotNull(GetQueryable().FirstOrDefault(u => u.UserName == user.UserName));
         }

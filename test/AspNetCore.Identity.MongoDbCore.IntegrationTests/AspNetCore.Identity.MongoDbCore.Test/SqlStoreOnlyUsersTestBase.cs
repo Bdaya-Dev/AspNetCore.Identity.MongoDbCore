@@ -11,20 +11,20 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure;
-using MongoDbGenericRepository;
+
 using AspNetCore.Identity.MongoDbCore.Models;
 using AspNetCore.Identity.MongoDbCore;
 using MongoDB.Driver;
+using MongoDB.Entities;
 
 namespace AspNetCore.Identity.MongoDbCore.Test
 {
-    public abstract class SqlStoreOnlyUsersTestBase<TUser, TKey> : UserManagerSpecificationTestBase<TUser, TKey>, IClassFixture<MongoDatabaseFixture<TUser, TKey>>
-        where TUser : MongoIdentityUser<TKey>, new()
-        where TKey : IEquatable<TKey>
+    public abstract class SqlStoreOnlyUsersTestBase<TUser> : UserManagerSpecificationTestBase<TUser>, IClassFixture<MongoDatabaseFixture<TUser>>
+        where TUser : MongoIdentityUser, new()
     {
-        private readonly MongoDatabaseFixture<TUser, TKey> _fixture;
+        private readonly MongoDatabaseFixture<TUser> _fixture;
 
-        protected SqlStoreOnlyUsersTestBase(MongoDatabaseFixture<TUser, TKey> fixture)
+        protected SqlStoreOnlyUsersTestBase(MongoDatabaseFixture<TUser> fixture)
         {
             _fixture = fixture;
         }
@@ -53,15 +53,15 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
         protected override Expression<Func<TUser, bool>> UserNameStartsWithPredicate(string userName) => u => u.UserName.StartsWith(userName);
 
-        public IMongoDbContext CreateContext()
+        public DBContext CreateContext()
         {
-            return Container.MongoRepository.Context;
+            return Container.MongoContext;
         }
 
 
         protected override void AddUserStore(IServiceCollection services, object context = null)
         {
-            services.AddSingleton<IUserStore<TUser>>(new MongoUserOnlyStore<TUser, IMongoDbContext, TKey>(Container.MongoRepository.Context));
+            services.AddSingleton<IUserStore<TUser>>(new MongoUserOnlyStore<TUser, DBContext>(Container.MongoContext));
         }
 
         protected override void SetUserPasswordHash(TUser user, string hashedPassword)
@@ -87,14 +87,14 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
         private IQueryable<TUser> GetQueryable()
         {
-            return Container.MongoRepository.Context.GetCollection<TUser>().AsQueryable();
+            return Container.MongoContext.Queryable<TUser>();
         }
 
         [Fact]
         public void CanCreateUserUsingEF()
         {
             var user = CreateTestUser();
-            Container.MongoRepository.AddOne<TUser, TKey>(user);
+            Container.MongoContext.SaveAsync(user);
             Assert.True(GetQueryable().Any(u => u.UserName == user.UserName));
             Assert.NotNull(GetQueryable().FirstOrDefault(u => u.UserName == user.UserName));
         }
@@ -108,7 +108,7 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             IdentityResultAssert.IsSuccess(await manager.DeleteAsync(user));
         }
 
-        private async Task LazyLoadTestSetup(IMongoDbContext db, TUser user)
+        private async Task LazyLoadTestSetup(DBContext db, TUser user)
         {
             var context = CreateContext();
             var manager = CreateManager(context);

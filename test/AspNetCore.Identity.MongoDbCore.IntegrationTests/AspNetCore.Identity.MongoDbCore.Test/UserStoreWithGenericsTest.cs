@@ -14,16 +14,17 @@ using Xunit;
 using AspNetCore.Identity.MongoDbCore.Models;
 using AspNetCore.Identity.MongoDbCore;
 using AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure;
-using MongoDbGenericRepository;
+
 using Microsoft.AspNetCore.Identity;
+using MongoDB.Entities;
 
 namespace AspNetCore.Identity.MongoDbCore.Test
 {
-    public class UserStoreWithGenericsTest : IdentitySpecificationTestBase<IdentityUserWithGenerics, MyIdentityRole, string>, IClassFixture<MongoDatabaseFixture<IdentityUserWithGenerics, MyIdentityRole, string>>
+    public class UserStoreWithGenericsTest : IdentitySpecificationTestBase<IdentityUserWithGenerics, MyIdentityRole>, IClassFixture<MongoDatabaseFixture<IdentityUserWithGenerics, MyIdentityRole>>
     {
-        private readonly MongoDatabaseFixture<IdentityUserWithGenerics, MyIdentityRole, string> _fixture;
+        private readonly MongoDatabaseFixture<IdentityUserWithGenerics, MyIdentityRole> _fixture;
 
-        public UserStoreWithGenericsTest(MongoDatabaseFixture<IdentityUserWithGenerics, MyIdentityRole, string> fixture)
+        public UserStoreWithGenericsTest(MongoDatabaseFixture<IdentityUserWithGenerics, MyIdentityRole> fixture)
         {
             _fixture = fixture;
         }
@@ -35,13 +36,13 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
         protected override void AddUserStore(IServiceCollection services, object context = null)
         {
-            services.AddSingleton<IUserStore<IdentityUserWithGenerics>>(new MongoUserStore<IdentityUserWithGenerics>(Container.MongoRepository.Context));
+            services.AddSingleton<IUserStore<IdentityUserWithGenerics>>(new MongoUserStore<IdentityUserWithGenerics>(Container.MongoContext));
             //services.AddSingleton<IUserStore<IdentityUserWithGenerics>>(new UserStoreWithGenerics((ContextWithGenerics)context, "TestContext"));
         }
 
         protected override void AddRoleStore(IServiceCollection services, object context = null)
         {
-            services.AddSingleton<IRoleStore<MyIdentityRole>>(new MongoRoleStore<MyIdentityRole>(Container.MongoRepository.Context));
+            services.AddSingleton<IRoleStore<MyIdentityRole>>(new MongoRoleStore<MyIdentityRole>(Container.MongoContext));
             //services.AddSingleton<IRoleStore<MyIdentityRole>>(new RoleStoreWithGenerics(Container.MongoRepository.Context, "TestContext"));
         }
 
@@ -218,18 +219,18 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
     #region Generic Type defintions
 
-    public class IdentityUserWithGenerics : MongoDbIdentityUser
+    public class IdentityUserWithGenerics : MongoIdentityUser
     {
         public IdentityUserWithGenerics() : base()
         {
         }
     }
 
-    public class UserStoreWithGenerics : MongoUserStore<IdentityUserWithGenerics, MyIdentityRole, IMongoDbContext, string, IdentityUserClaimWithIssuer, IdentityUserRoleWithDate, IdentityUserLoginWithContext, IdentityUserTokenWithStuff, IdentityRoleClaimWithIssuer>
+    public class UserStoreWithGenerics : MongoUserStore<IdentityUserWithGenerics, MyIdentityRole, DBContext, IdentityUserClaimWithIssuer, IdentityUserRoleWithDate, IdentityUserLoginWithContext, IdentityUserTokenWithStuff, IdentityRoleClaimWithIssuer>
     {
         public string LoginContext { get; set; }
 
-        public UserStoreWithGenerics(IMongoDbContext context, string loginContext) : base(context)
+        public UserStoreWithGenerics(DBContext context, string loginContext) : base(context)
         {
             LoginContext = loginContext;
         }
@@ -274,10 +275,10 @@ namespace AspNetCore.Identity.MongoDbCore.Test
         }
     }
 
-    public class RoleStoreWithGenerics : MongoRoleStore<MyIdentityRole, IMongoDbContext, string, IdentityUserRoleWithDate, IdentityRoleClaimWithIssuer>
+    public class RoleStoreWithGenerics : MongoRoleStore<MyIdentityRole, DBContext,  IdentityUserRoleWithDate, IdentityRoleClaimWithIssuer>
     {
         private string _loginContext;
-        public RoleStoreWithGenerics(IMongoDbContext context, string loginContext) : base(context)
+        public RoleStoreWithGenerics(DBContext context, string loginContext) : base(context)
         {
             _loginContext = loginContext;
         }
@@ -327,7 +328,7 @@ namespace AspNetCore.Identity.MongoDbCore.Test
         public DateTime Created { get; set; }
     }
 
-    public class MyIdentityRole : MongoDbIdentityRole
+    public class MyIdentityRole : MongoIdentityRole
     {
         public MyIdentityRole() : base()
         {

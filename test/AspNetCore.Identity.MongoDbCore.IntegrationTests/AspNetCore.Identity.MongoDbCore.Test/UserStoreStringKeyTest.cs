@@ -8,23 +8,23 @@ using AspNetCore.Identity.MongoDbCore.Models;
 
 namespace AspNetCore.Identity.MongoDbCore.Test
 {
-    public class StringUser : MongoDbIdentityUser
+    public class StringUser : MongoIdentityUser
     {
         public StringUser() : base()
         {
         }
     }
 
-    public class StringRole : MongoDbIdentityRole
+    public class StringRole : MongoIdentityRole
     {
         public StringRole() : base()
         {
         }
     }
 
-    public class UserStoreStringKeyTest : MongoDbStoreTestBase<StringUser, StringRole, string>
+    public class UserStoreStringKeyTest : MongoDbStoreTestBase<StringUser, StringRole>
     {
-        public UserStoreStringKeyTest(MongoDatabaseFixture<StringUser, StringRole, string> fixture)
+        public UserStoreStringKeyTest(MongoDatabaseFixture<StringUser, StringRole> fixture)
             : base(fixture)
         { }
 

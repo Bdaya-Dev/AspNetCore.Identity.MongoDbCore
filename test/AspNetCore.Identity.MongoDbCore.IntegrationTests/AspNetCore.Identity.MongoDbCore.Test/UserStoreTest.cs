@@ -9,16 +9,16 @@ using AspNetCore.Identity.MongoDbCore.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Test;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDbGenericRepository;
+using MongoDB.Entities;
 using Xunit;
 
 namespace AspNetCore.Identity.MongoDbCore.Test
 {
-    public class UserStoreTest : IdentitySpecificationTestBase<MongoDbIdentityUser, MongoDbIdentityRole>, IClassFixture<MongoDatabaseFixture<MongoDbIdentityUser, MongoDbIdentityRole, string>>
+    public class UserStoreTest : IdentitySpecificationTestBase<MongoIdentityUser, MongoIdentityRole>, IClassFixture<MongoDatabaseFixture<MongoIdentityUser, MongoIdentityRole>>
     {
-        private readonly MongoDatabaseFixture<MongoDbIdentityUser, MongoDbIdentityRole, string> _fixture;
+        private readonly MongoDatabaseFixture<MongoIdentityUser, MongoIdentityRole> _fixture;
 
-        public UserStoreTest(MongoDatabaseFixture<MongoDbIdentityUser, MongoDbIdentityRole, string> fixture)
+        public UserStoreTest(MongoDatabaseFixture<MongoIdentityUser, MongoIdentityRole> fixture)
         {
             _fixture = fixture;
         }
@@ -33,25 +33,24 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             user.Id = Guid.NewGuid().ToString();
             var guidString = user.Id.ToString();
             user.UserName = guidString;
-            Container.MongoRepository.AddOne<MongoDbIdentityUser, string>(user);
-            Assert.True(Container.MongoRepository.Any<MongoDbIdentityUser, string>(u => u.UserName == guidString));
-            Assert.NotNull(Container.MongoRepository.GetOne<MongoDbIdentityUser, string>(u => u.UserName == guidString));
+            Container.MongoContext.SaveAsync(user).Wait();
+            Assert.True(Container.MongoContext.Find<MongoIdentityUser>().Match(u => u.UserName == guidString).ExecuteFirstAsync().Result != null);            
         }
 
         protected override void AddUserStore(IServiceCollection services, object context = null)
         {
-            services.AddSingleton<IUserStore<MongoDbIdentityUser>>(new MongoUserStore<MongoDbIdentityUser, MongoDbIdentityRole, IMongoDbContext, string>(Container.MongoRepository.Context));
+            services.AddSingleton<IUserStore<MongoIdentityUser>>(new MongoUserStore<MongoIdentityUser, MongoIdentityRole, DBContext>(Container.MongoContext));
         }
 
         protected override void AddRoleStore(IServiceCollection services, object context = null)
         {
-            services.AddSingleton<IRoleStore<MongoDbIdentityRole>>(new MongoRoleStore<MongoDbIdentityRole, IMongoDbContext>(Container.MongoRepository.Context));
+            services.AddSingleton<IRoleStore<MongoIdentityRole>>(new MongoRoleStore<MongoIdentityRole, DBContext>(Container.MongoContext));
         }
 
         [Fact]
         public async Task SqlUserStoreMethodsThrowWhenDisposedTest()
         {
-            var store = new MongoUserStore(Container.MongoRepository.Context);
+            var store = new MongoUserStore(Container.MongoContext);
             store.Dispose();
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await store.AddClaimsAsync(null, null));
             await Assert.ThrowsAsync<ObjectDisposedException>(async () => await store.AddLoginAsync(null, null));
@@ -85,7 +84,7 @@ namespace AspNetCore.Identity.MongoDbCore.Test
         public async Task UserStorePublicNullCheckTest()
         {
             Assert.Throws<ArgumentNullException>("context", () => new MongoUserStore(null));
-            var store = new MongoUserStore(Container.MongoRepository.Context);
+            var store = new MongoUserStore(Container.MongoContext);
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.GetUserIdAsync(null));
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.GetUserNameAsync(null));
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.SetUserNameAsync(null, null));
@@ -113,11 +112,11 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.GetSecurityStampAsync(null));
             await Assert.ThrowsAsync<ArgumentNullException>("user",
                 async () => await store.SetSecurityStampAsync(null, null));
-            await Assert.ThrowsAsync<ArgumentNullException>("login", async () => await store.AddLoginAsync(new MongoDbIdentityUser("fake"), null));
+            await Assert.ThrowsAsync<ArgumentNullException>("login", async () => await store.AddLoginAsync(new MongoIdentityUser("fake"), null));
             await Assert.ThrowsAsync<ArgumentNullException>("claims",
-                async () => await store.AddClaimsAsync(new MongoDbIdentityUser("fake"), null));
+                async () => await store.AddClaimsAsync(new MongoIdentityUser("fake"), null));
             await Assert.ThrowsAsync<ArgumentNullException>("claims",
-                async () => await store.RemoveClaimsAsync(new MongoDbIdentityUser("fake"), null));
+                async () => await store.RemoveClaimsAsync(new MongoIdentityUser("fake"), null));
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.GetEmailConfirmedAsync(null));
             await Assert.ThrowsAsync<ArgumentNullException>("user",
                 async () => await store.SetEmailConfirmedAsync(null, true));
@@ -139,12 +138,12 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.SetLockoutEndDateAsync(null, new DateTimeOffset()));
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.ResetAccessFailedCountAsync(null));
             await Assert.ThrowsAsync<ArgumentNullException>("user", async () => await store.IncrementAccessFailedCountAsync(null));
-            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.AddToRoleAsync(new MongoDbIdentityUser("fake"), null));
-            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.RemoveFromRoleAsync(new MongoDbIdentityUser("fake"), null));
-            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.IsInRoleAsync(new MongoDbIdentityUser("fake"), null));
-            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.AddToRoleAsync(new MongoDbIdentityUser("fake"), ""));
-            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.RemoveFromRoleAsync(new MongoDbIdentityUser("fake"), ""));
-            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.IsInRoleAsync(new MongoDbIdentityUser("fake"), ""));
+            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.AddToRoleAsync(new MongoIdentityUser("fake"), null));
+            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.RemoveFromRoleAsync(new MongoIdentityUser("fake"), null));
+            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.IsInRoleAsync(new MongoIdentityUser("fake"), null));
+            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.AddToRoleAsync(new MongoIdentityUser("fake"), ""));
+            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.RemoveFromRoleAsync(new MongoIdentityUser("fake"), ""));
+            await Assert.ThrowsAsync<ArgumentException>("normalizedRoleName", async () => await store.IsInRoleAsync(new MongoIdentityUser("fake"), ""));
         }
 
         [Fact]
@@ -274,10 +273,10 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             IdentityResultAssert.IsFailure(await manager2.UpdateAsync(role2), new IdentityErrorDescriber().ConcurrencyFailure());
         }
 
-        private MongoDbIdentityRole CreateRole()
+        private MongoIdentityRole CreateRole()
         {
             var guid = Guid.NewGuid().ToString();
-            var role = new MongoDbIdentityRole(guid);
+            var role = new MongoIdentityRole(guid);
             _fixture.RolesToDelete.Add(role);
             return role;
         }
@@ -309,7 +308,7 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             // Arrange
             const string originalEmail = "original@email.com";
             string newEmail1 = $"new{DateTime.Now.Ticks}@email.com";
-            string newEmail2 = $"new{DateTime.Now.Ticks+1}@email.com";
+            string newEmail2 = $"new{DateTime.Now.Ticks + 1}@email.com";
             var user = CreateTestUser();
             user.Email = originalEmail;
             var manager = CreateManager();
@@ -341,10 +340,10 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             Assert.Equal(newEmail2, updatedUser2.UserName);
         }
 
-        protected override MongoDbIdentityUser CreateTestUser(string namePrefix = "", string email = "", string phoneNumber = "",
+        protected override MongoIdentityUser CreateTestUser(string namePrefix = "", string email = "", string phoneNumber = "",
             bool lockoutEnabled = false, DateTimeOffset? lockoutEnd = default(DateTimeOffset?), bool useNamePrefixAsUserName = false)
         {
-            var user = new MongoDbIdentityUser
+            var user = new MongoIdentityUser
             {
                 UserName = useNamePrefixAsUserName ? namePrefix : string.Format("{0}{1}", namePrefix, Guid.NewGuid()),
                 Email = email,
@@ -356,26 +355,26 @@ namespace AspNetCore.Identity.MongoDbCore.Test
             return user;
         }
 
-        protected override MongoDbIdentityRole CreateTestRole(string roleNamePrefix = "", bool useRoleNamePrefixAsRoleName = false)
+        protected override MongoIdentityRole CreateTestRole(string roleNamePrefix = "", bool useRoleNamePrefixAsRoleName = false)
         {
             var roleName = useRoleNamePrefixAsRoleName ? roleNamePrefix : string.Format("{0}{1}", roleNamePrefix, Guid.NewGuid());
-            var role = new MongoDbIdentityRole(roleName);
+            var role = new MongoIdentityRole(roleName);
             _fixture.RolesToDelete.Add(role);
             return role;
         }
 
-        protected override void SetUserPasswordHash(MongoDbIdentityUser user, string hashedPassword)
+        protected override void SetUserPasswordHash(MongoIdentityUser user, string hashedPassword)
         {
             user.PasswordHash = hashedPassword;
         }
 
-        protected override Expression<Func<MongoDbIdentityUser, bool>> UserNameEqualsPredicate(string userName) => u => u.UserName == userName;
+        protected override Expression<Func<MongoIdentityUser, bool>> UserNameEqualsPredicate(string userName) => u => u.UserName == userName;
 
-        protected override Expression<Func<MongoDbIdentityRole, bool>> RoleNameEqualsPredicate(string roleName) => r => r.Name == roleName;
+        protected override Expression<Func<MongoIdentityRole, bool>> RoleNameEqualsPredicate(string roleName) => r => r.Name == roleName;
 
-        protected override Expression<Func<MongoDbIdentityRole, bool>> RoleNameStartsWithPredicate(string roleName) => r => r.Name.StartsWith(roleName);
+        protected override Expression<Func<MongoIdentityRole, bool>> RoleNameStartsWithPredicate(string roleName) => r => r.Name.StartsWith(roleName);
 
-        protected override Expression<Func<MongoDbIdentityUser, bool>> UserNameStartsWithPredicate(string userName) => u => u.UserName.StartsWith(userName);
+        protected override Expression<Func<MongoIdentityUser, bool>> UserNameStartsWithPredicate(string userName) => u => u.UserName.StartsWith(userName);
 
     }
 

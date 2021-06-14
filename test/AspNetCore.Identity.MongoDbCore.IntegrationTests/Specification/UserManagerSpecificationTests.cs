@@ -15,8 +15,8 @@ using AspNetCore.Identity.MongoDbCore.Extensions;
 using AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure;
 using AspNetCore.Identity.MongoDbCore.Models;
 using AspNetCore.Identity.MongoDbCore.Infrastructure;
-using MongoDbGenericRepository;
 using AspNetCore.Identity.MongoDbCore;
+using MongoDB.Entities;
 
 namespace Microsoft.AspNetCore.Identity.Test
 {
@@ -24,7 +24,7 @@ namespace Microsoft.AspNetCore.Identity.Test
     /// Base class for tests that exercise basic identity functionality that all stores should support.
     /// </summary>
     /// <typeparam name="TUser">The type of the user.</typeparam>
-    public abstract class UserManagerSpecificationTestBase<TUser> : UserManagerSpecificationTestBase<TUser, string> where TUser : MongoDbIdentityUser, new()
+    public abstract class UserManagerSpecificationTestBase<TUser> : UserManagerSpecificationTestBase<TUser, string> where TUser : MongoIdentityUser, new()
     {
     }
 
@@ -34,7 +34,7 @@ namespace Microsoft.AspNetCore.Identity.Test
     /// <typeparam name="TUser">The type of the user.</typeparam>
     /// <typeparam name="TKey">The primary key type.</typeparam>
     public abstract class UserManagerSpecificationTestBase<TUser, TKey>
-        where TUser : MongoIdentityUser<TKey>, new()
+        where TUser : MongoIdentityUser, new()
         where TKey : IEquatable<TKey>
     {
 
@@ -68,7 +68,7 @@ namespace Microsoft.AspNetCore.Identity.Test
 
             services.AddSingleton<IUserStore<TUser>>(provider =>
             {
-                var userStore = new MongoUserStore<TUser, MongoIdentityRole<TKey>, IMongoDbContext, TKey>(provider.GetService<IMongoRepository>().Context);
+                var userStore = new MongoUserStore<TUser, MongoIdentityRole, DBContext>(provider.GetService<DBContext>());
                 return userStore;
             });
             services.AddSingleton<ILogger<UserManager<TUser>>>(new TestLogger<UserManager<TUser>>());

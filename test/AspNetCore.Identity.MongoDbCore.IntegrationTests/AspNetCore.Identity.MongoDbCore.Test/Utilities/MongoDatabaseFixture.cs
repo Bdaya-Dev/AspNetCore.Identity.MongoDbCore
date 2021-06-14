@@ -2,51 +2,45 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using MongoDbGenericRepository;
+
 using AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure;
 using System.Collections.Concurrent;
 using System.Linq;
 using MongoDB.Driver;
-using MongoDbGenericRepository.Models;
+using MongoDB.Entities;
 
 namespace AspNetCore.Identity.MongoDbCore.Test
 {
-    public class MongoDatabaseFixture<TUser, TKey> : IDisposable
-        where TUser : IDocument<TKey>
-        where TKey : IEquatable<TKey>
+    public class MongoDatabaseFixture<TUser> : IDisposable
+        where TUser : IEntity
     {
 
-        public IMongoDbContext Context;
+        public DBContext Context;
 
         public MongoDatabaseFixture()
         {
-            Context = new MongoDbContext(
-                Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString,
-                Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName);
+            DB.InitAsync(Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName, MongoClientSettings.FromConnectionString(Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString)).Wait();
             UsersToDelete = new ConcurrentBag<TUser>();
         }
         public ConcurrentBag<TUser> UsersToDelete { get; set; }
         public virtual void Dispose()
         {
-            var userIds = UsersToDelete.ToList().Select(e => e.Id);
+            var userIds = UsersToDelete.ToList().Select(e => e.ID);
             if (userIds.Any())
             {
-                Context.GetCollection<TUser>().DeleteMany(e => userIds.Contains(e.Id));
+                Context.DeleteAsync<TUser>(userIds).Wait();
             }
         }
     }
 
-    public class MongoDatabaseFixture<TUser, TRole, TKey> : MongoDatabaseFixture<TUser, TKey>, IDisposable
-        where TUser : IDocument<TKey>
-        where TRole : IDocument<TKey>
-        where TKey : IEquatable<TKey>
+    public class MongoDatabaseFixture<TUser, TRole> : MongoDatabaseFixture<TUser>, IDisposable
+        where TUser : IEntity
+        where TRole : IEntity
     {
 
         public MongoDatabaseFixture()
         {
-            Context = new MongoDbContext(
-                Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString,
-                Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName);
+            DB.InitAsync(Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName, MongoClientSettings.FromConnectionString(Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString)).Wait();
             UsersToDelete = new ConcurrentBag<TUser>();
             RolesToDelete = new ConcurrentBag<TRole>();
         }
@@ -54,15 +48,15 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
         public override void Dispose()
         {
-            var userIds = UsersToDelete.ToList().Select(e => e.Id);
+            var userIds = UsersToDelete.ToList().Select(e => e.ID);
             if (userIds.Any())
             {
-                Context.GetCollection<TUser>().DeleteMany(e => userIds.Contains(e.Id));
+                Context.DeleteAsync<TUser>(userIds).Wait();
             }
-            var roleIds = RolesToDelete.ToList().Select(e => e.Id);
+            var roleIds = RolesToDelete.ToList().Select(e => e.ID);
             if (roleIds.Any())
             {
-                Context.GetCollection<TRole>().DeleteMany(e => roleIds.Contains(e.Id));
+                Context.DeleteAsync<TRole>(roleIds).Wait();
             }
         }
     }
