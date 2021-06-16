@@ -1,7 +1,10 @@
 using AspNetCore.Identity.MongoDbCore.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Driver;
 using MongoDB.Entities;
 using System;
@@ -11,11 +14,34 @@ using System.Linq;
 namespace AspNetCore.Identity.MongoDbCore.Models
 {
 
+
     /// <summary>
     /// A document representing an <see cref="IdentityUser{TKey}"/> document.
     /// </summary>
     public class MongoIdentityUser : IdentityUser<string>, IEntity, IClaimHolder
     {
+
+        static MongoIdentityUser()
+        {
+            BsonClassMap.RegisterClassMap<IdentityUser<string>>(cm =>
+            {
+                cm.AutoMap();
+                cm.SetIsRootClass(true);
+                cm.UnmapProperty(nameof(Id));
+
+            });
+            BsonClassMap.RegisterClassMap<MongoIdentityUser>(cm =>
+            {
+                cm.AutoMap();
+                cm.MapIdProperty(nameof(ID))
+               .SetIdGenerator(StringObjectIdGenerator.Instance)
+               .SetSerializer(new StringSerializer(BsonType.ObjectId));
+
+            });
+        }
+
+        
+        
 
         /// <summary>
         /// The version of the schema do the <see cref="MongoIdentityUser"/> document.
@@ -43,12 +69,8 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         public virtual List<Token> Tokens { get; set; }
 
 
-        /// <inheritdoc/>
-        [Ignore]
-        public override string Id { get; set; }
 
         /// <inheritdoc/>
-        [BsonId, AsObjectId]
         public string ID { get => Id; set => Id = value; }
 
 

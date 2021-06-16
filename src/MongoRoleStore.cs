@@ -130,7 +130,7 @@ namespace AspNetCore.Identity.MongoDbCore
             var oldStamp = role.ConcurrencyStamp;
             role.ConcurrencyStamp = Guid.NewGuid().ToString();
 
-            var updateRes = await Context.Replace<TRole>().Match(x => x.Id.Equals(role.Id) && x.ConcurrencyStamp.Equals(oldStamp)).WithEntity(role).ExecuteAsync(cancellationToken);
+            var updateRes = await Context.Replace<TRole>().MatchID(role.Id).Match(x => x.ConcurrencyStamp.Equals(oldStamp)).WithEntity(role).ExecuteAsync(cancellationToken);
             if (updateRes.ModifiedCount == 0)
             {
                 return IdentityResult.Failed(ErrorDescriber.ConcurrencyFailure());
@@ -154,7 +154,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             var oldStamp = role.ConcurrencyStamp;
             role.ConcurrencyStamp = Guid.NewGuid().ToString();
-            var deleteRes = await Context.DeleteAsync<TRole>(x => x.Id.Equals(role.Id)
+            var deleteRes = await Context.DeleteAsync<TRole>(x => x.ID.Equals(role.Id)
                                                                && x.ConcurrencyStamp.Equals(oldStamp), cancellationToken);
             if (deleteRes.DeletedCount == 0)
             {
@@ -236,7 +236,7 @@ namespace AspNetCore.Identity.MongoDbCore
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public virtual Task SetRoleNameAsync(TRole role, string roleName, CancellationToken cancellationToken = default)
         {
-            return SetBase(role, x => x.Name, role.Name, cancellationToken);
+            return SetBase(role, x => x.Name, roleName, cancellationToken);
         }
 
 
@@ -294,7 +294,7 @@ namespace AspNetCore.Identity.MongoDbCore
         /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public virtual Task SetNormalizedRoleNameAsync(TRole role, string normalizedName, CancellationToken cancellationToken = default)
         {
-            return SetBase(role, x => x.NormalizedName, role.NormalizedName);
+            return SetBase(role, x => x.NormalizedName, normalizedName);
         }
 
         /// <summary>

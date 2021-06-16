@@ -1,53 +1,53 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;netstandard2.1</TargetFrameworks>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- Nuget Package properties -->
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <PackageId>AspNetCore.Identity.MongoDbCore</PackageId>
-    <Authors>Alexandre Spieser</Authors>
-    <PackageTitle>AspNetCore.Identity.MongoDbCore</PackageTitle>
-    <Description>A MongoDb UserStore and RoleStore adapter for Microsoft.Extensions.Identity.Core 3.1.</Description>
-    <PackageLicenseUrl>http://www.opensource.org/licenses/mit-license.php</PackageLicenseUrl>
-    <PackageProjectUrl>http://www.opensource.org/licenses/mit-license.php</PackageProjectUrl>
-    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-    <PackageReleaseNotes>Release notes are at Release notes are at https://github.com/alexandre-spieser/AspNetCore.Identity.MongoDbCore/releases</PackageReleaseNotes>
-    <Copyright>Copyright 2021 (c) Alexandre Spieser. All rights reserved.</Copyright>
-    <PackageTags>aspnetcore mongo mongodb identity membership</PackageTags>
-    <RepositoryUrl>https://github.com/alexandre-spieser/AspNetCore.Identity.MongoDbCore</RepositoryUrl>
-    <RepositoryType>Git</RepositoryType>
-    <!-- Versioning -->
-    <PackageVersion>3.1.1</PackageVersion>
-    <Version>3.1.1</Version>
-    <FileVersion>3.1.1</FileVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>netcoreapp3.1;netstandard2.1</TargetFrameworks>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<!-- Nuget Package properties -->
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageId>AspNetCore.Identity.MongoDbCore</PackageId>
+		<Authors>Alexandre Spieser</Authors>
+		<PackageTitle>AspNetCore.Identity.MongoDbCore</PackageTitle>
+		<Description>A MongoDb UserStore and RoleStore adapter for Microsoft.Extensions.Identity.Core 3.1.</Description>
+		<PackageLicenseUrl>http://www.opensource.org/licenses/mit-license.php</PackageLicenseUrl>
+		<PackageProjectUrl>http://www.opensource.org/licenses/mit-license.php</PackageProjectUrl>
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+		<PackageReleaseNotes>Release notes are at Release notes are at https://github.com/alexandre-spieser/AspNetCore.Identity.MongoDbCore/releases</PackageReleaseNotes>
+		<Copyright>Copyright 2021 (c) Alexandre Spieser. All rights reserved.</Copyright>
+		<PackageTags>aspnetcore mongo mongodb identity membership</PackageTags>
+		<RepositoryUrl>https://github.com/alexandre-spieser/AspNetCore.Identity.MongoDbCore</RepositoryUrl>
+		<RepositoryType>Git</RepositoryType>
+		<!-- Versioning -->
+		<PackageVersion>3.2.0</PackageVersion>
+		<Version>3.2.0</Version>
+		<FileVersion>3.2.0</FileVersion>
+	</PropertyGroup>
 
-  <PropertyGroup>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-  </PropertyGroup>
+	<PropertyGroup>
+		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="5.0.7" />
-    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="5.0.7" />
-    <PackageReference Include="MongoDB.Driver" Version="2.12.4" />
-    <PackageReference Include="MongoDB.Entities" Version="20.13.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Identity.Core" Version="5.0.7" />
+		<PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="5.0.7" />
+		<PackageReference Include="MongoDB.Driver" Version="2.12.4" />
+		<PackageReference Include="MongoDB.Entities" Version="20.14.0" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Resources.Designer.cs">
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-  </ItemGroup>
+	<ItemGroup>
+		<Compile Update="Resources.Designer.cs">
+			<DependentUpon>Resources.resx</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+	</ItemGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Update="Resources.resx">
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <Generator>ResXFileCodeGenerator</Generator>
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </EmbeddedResource>
-  </ItemGroup>
+	<ItemGroup>
+		<EmbeddedResource Update="Resources.resx">
+			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
+			<Generator>ResXFileCodeGenerator</Generator>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</EmbeddedResource>
+	</ItemGroup>
 
 </Project>

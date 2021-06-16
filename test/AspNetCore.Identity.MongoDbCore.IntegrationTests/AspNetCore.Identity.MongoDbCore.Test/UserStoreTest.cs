@@ -9,6 +9,7 @@ using AspNetCore.Identity.MongoDbCore.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Test;
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
 using MongoDB.Entities;
 using Xunit;
 
@@ -30,11 +31,11 @@ namespace AspNetCore.Identity.MongoDbCore.Test
         public void CanCreateUserUsingMongoDB()
         {
             var user = CreateTestUser();
-            user.Id = Guid.NewGuid().ToString();
+            user.Id = ObjectId.GenerateNewId().ToString();
             var guidString = user.Id.ToString();
             user.UserName = guidString;
             Container.MongoContext.SaveAsync(user).Wait();
-            Assert.True(Container.MongoContext.Find<MongoIdentityUser>().Match(u => u.UserName == guidString).ExecuteFirstAsync().Result != null);            
+            Assert.True(Container.MongoContext.Find<MongoIdentityUser>().Match(u => u.UserName == guidString).ExecuteFirstAsync().Result != null);
         }
 
         protected override void AddUserStore(IServiceCollection services, object context = null)

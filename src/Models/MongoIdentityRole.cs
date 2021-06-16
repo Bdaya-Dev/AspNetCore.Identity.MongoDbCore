@@ -1,6 +1,9 @@
 ﻿using AspNetCore.Identity.MongoDbCore.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.IdGenerators;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Entities;
 using System;
 using System.Collections.Generic;
@@ -12,6 +15,26 @@ namespace AspNetCore.Identity.MongoDbCore.Models
     /// </summary>    
     public class MongoIdentityRole : IdentityRole<string>, IEntity, IClaimHolder
     {
+
+        static MongoIdentityRole()
+        {
+            BsonClassMap.RegisterClassMap<IdentityRole<string>>(cm =>
+            {
+                cm.AutoMap();
+                cm.SetIsRootClass(true);
+                cm.UnmapProperty(nameof(Id));
+
+            });
+            BsonClassMap.RegisterClassMap<MongoIdentityRole>(cm =>
+            {
+                cm.AutoMap();
+                cm.MapIdProperty(nameof(ID))
+               .SetIdGenerator(StringObjectIdGenerator.Instance)
+               .SetSerializer(new StringSerializer(BsonType.ObjectId));
+
+            });
+        }
+
         /// <summary>
         /// The constructor for a <see cref="MongoIdentityRole"/>
         /// </summary>

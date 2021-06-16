@@ -46,9 +46,7 @@ namespace AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure
 
             lock (Locks.MongoInitLock)
             {
-                DB.InitAsync(databaseSettings.DatabaseName, MongoClientSettings.FromConnectionString(databaseSettings.ConnectionString));
-
-                _mongoDbRepository = new DBContext();
+                _mongoDbRepository = new DBContext(databaseSettings.DatabaseName, MongoClientSettings.FromConnectionString(databaseSettings.ConnectionString));
             }
         }
 
@@ -59,7 +57,6 @@ namespace AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure
         const string connectionString = "mongodb://localhost:27017";
         private static readonly DBContext _mongoDbRepository;
 
-        private static readonly DBContext _mongoDbRepository2;
 
         public static DBContext MongoContext
         {

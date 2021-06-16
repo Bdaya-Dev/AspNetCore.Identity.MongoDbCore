@@ -109,7 +109,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             var oldStamp = user.ConcurrencyStamp;
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            var updateRes = await Context.Replace<TUser>().Match(x => x.Id.Equals(user.Id) && x.ConcurrencyStamp.Equals(oldStamp)).WithEntity(user).ExecuteAsync(cancellationToken);
+            var updateRes = await Context.Replace<TUser>().MatchID(user.ID).Match(x => x.ConcurrencyStamp.Equals(oldStamp)).WithEntity(user).ExecuteAsync(cancellationToken);
 
             if (updateRes.ModifiedCount == 0)
             {
@@ -134,7 +134,7 @@ namespace AspNetCore.Identity.MongoDbCore
             user.Tokens.Clear();
             var oldStamp = user.ConcurrencyStamp;
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            var deleteRes = await Context.DeleteAsync<TUser>(x => x.Id.Equals(user.Id)
+            var deleteRes = await Context.DeleteAsync<TUser>(x => x.ID.Equals(user.ID)
                                                               && x.ConcurrencyStamp.Equals(oldStamp), cancellationToken);
             if (deleteRes.DeletedCount == 0)
             {
@@ -233,7 +233,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             if (addedSome)
             {
-                var op = await Context.Update<TUser>().MatchID(user.ID).Modify(p => p.Claims, user.Claims).ExecuteAsync();
+                var op = await Context.Update<TUser>().MatchID(user.Id).Modify(p => p.Claims, user.Claims).ExecuteAsync();
                 if (!op.IsAcknowledged)
                 {
                     throw new Exception($"Failed to add claims to user {user.Id}");
@@ -260,7 +260,7 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.ReplaceClaim(claim, newClaim))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Claims, user.Claims).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Claims, user.Claims).ExecuteAsync();
             }
         }
 
@@ -278,7 +278,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             if (user.RemoveClaims(claims))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Claims, user.Claims).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Claims, user.Claims).ExecuteAsync();
             }
         }
 
@@ -300,7 +300,7 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.AddLogin(login))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Logins, user.Logins).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Logins, user.Logins).ExecuteAsync();
             }
         }
 
@@ -423,7 +423,7 @@ namespace AspNetCore.Identity.MongoDbCore
                 var memberExpression = (MemberExpression)expression.Body;
                 var member = (PropertyInfo)memberExpression.Member;
                 member.SetValue(user, value);
-                await Context.Update<TUser>().MatchID(user.ID).Modify(expression, value).ExecuteAsync(cancellationToken);
+                await Context.Update<TUser>().MatchID(user.Id).Modify(expression, value).ExecuteAsync(cancellationToken);
             }
             if (ignoreCheck)
             {

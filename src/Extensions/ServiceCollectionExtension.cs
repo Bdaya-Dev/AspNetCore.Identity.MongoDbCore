@@ -17,7 +17,6 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
         /// Configures the MongoDb Identity store adapters for the types of TUser only from <see cref="MongoIdentityUser{TKey}"/>.
         /// </summary>
         /// <typeparam name="TUser">The type representing a user.</typeparam>
-        /// <typeparam name="TKey">The type of the primary key of the identity document.</typeparam>
         /// <param name="services">The collection of service descriptors.</param>
         /// <param name="mongoDbIdentityConfiguration">A configuration object of the AspNetCore.Identity.MongoDbCore package.</param>
         public static IdentityBuilder ConfigureMongoDbIdentityUserOnly<TUser>(

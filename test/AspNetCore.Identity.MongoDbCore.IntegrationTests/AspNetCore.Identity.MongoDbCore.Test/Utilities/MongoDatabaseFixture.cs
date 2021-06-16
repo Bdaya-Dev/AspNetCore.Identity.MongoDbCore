@@ -8,24 +8,25 @@ using System.Collections.Concurrent;
 using System.Linq;
 using MongoDB.Driver;
 using MongoDB.Entities;
+using AspNetCore.Identity.MongoDbCore.Models;
 
 namespace AspNetCore.Identity.MongoDbCore.Test
 {
     public class MongoDatabaseFixture<TUser> : IDisposable
-        where TUser : IEntity
+        where TUser : MongoIdentityUser
     {
 
         public DBContext Context;
 
         public MongoDatabaseFixture()
         {
-            DB.InitAsync(Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName, MongoClientSettings.FromConnectionString(Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString)).Wait();
+            Context = new DBContext(Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName, MongoClientSettings.FromConnectionString(Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString));
             UsersToDelete = new ConcurrentBag<TUser>();
         }
         public ConcurrentBag<TUser> UsersToDelete { get; set; }
         public virtual void Dispose()
         {
-            var userIds = UsersToDelete.ToList().Select(e => e.ID);
+            var userIds = UsersToDelete.ToList().Select(e => e.Id);
             if (userIds.Any())
             {
                 Context.DeleteAsync<TUser>(userIds).Wait();
@@ -34,13 +35,13 @@ namespace AspNetCore.Identity.MongoDbCore.Test
     }
 
     public class MongoDatabaseFixture<TUser, TRole> : MongoDatabaseFixture<TUser>, IDisposable
-        where TUser : IEntity
-        where TRole : IEntity
+        where TUser : MongoIdentityUser
+        where TRole : MongoIdentityRole
     {
 
         public MongoDatabaseFixture()
         {
-            DB.InitAsync(Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName, MongoClientSettings.FromConnectionString(Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString)).Wait();
+            Context = new DBContext(Container.MongoDbIdentityConfiguration.MongoDbSettings.DatabaseName, MongoClientSettings.FromConnectionString(Container.MongoDbIdentityConfiguration.MongoDbSettings.ConnectionString));
             UsersToDelete = new ConcurrentBag<TUser>();
             RolesToDelete = new ConcurrentBag<TRole>();
         }
@@ -48,7 +49,7 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
         public override void Dispose()
         {
-            var userIds = UsersToDelete.ToList().Select(e => e.ID);
+            var userIds = UsersToDelete.ToList().Select(e => e.Id);
             if (userIds.Any())
             {
                 Context.DeleteAsync<TUser>(userIds).Wait();

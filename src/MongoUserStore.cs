@@ -118,7 +118,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             var oldStamp = user.ConcurrencyStamp;
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            var updateRes = await Context.Replace<TUser>().Match(x => x.Id.Equals(user.Id) && x.ConcurrencyStamp.Equals(oldStamp)).WithEntity(user).ExecuteAsync(cancellationToken);
+            var updateRes = await Context.Replace<TUser>().MatchID(user.ID).Match(x => x.ConcurrencyStamp.Equals(oldStamp)).WithEntity(user).ExecuteAsync(cancellationToken);
 
             if (updateRes.ModifiedCount == 0)
             {
@@ -143,7 +143,7 @@ namespace AspNetCore.Identity.MongoDbCore
             user.Tokens.Clear();
             var oldStamp = user.ConcurrencyStamp;
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            var deleteRes = await Context.DeleteAsync<TUser>(x => x.Id.Equals(user.Id)
+            var deleteRes = await Context.DeleteAsync<TUser>(x => x.ID.Equals(user.Id)
                                                               && x.ConcurrencyStamp.Equals(oldStamp), cancellationToken);
             if (deleteRes.DeletedCount == 0)
             {
@@ -201,13 +201,13 @@ namespace AspNetCore.Identity.MongoDbCore
         /// <inheritdoc/>
         protected override Task<TUser> FindUserAsync(string userId, CancellationToken cancellationToken)
         {
-            return Context.Find<TUser>().Match(u => userId).ExecuteFirstAsync(cancellationToken);
+            return Context.Find<TUser>().MatchID(userId).ExecuteFirstAsync(cancellationToken);
         }
 
         /// <inheritdoc/>
         protected override async Task<TUserLogin> FindUserLoginAsync(string userId, string loginProvider, string providerKey, CancellationToken cancellationToken)
         {
-            var user = await Context.Find<TUser>().Match(x => x.Id.Equals(userId) && x.Logins.Any(e => e.LoginProvider == loginProvider && e.ProviderKey == providerKey)).ExecuteFirstAsync(cancellationToken);
+            var user = await Context.Find<TUser>().MatchID(userId).Match(x => x.Logins.Any(e => e.LoginProvider == loginProvider && e.ProviderKey == providerKey)).ExecuteFirstAsync(cancellationToken);
             if (user != null)
             {
                 return (TUserLogin)user.GetUserLogin(loginProvider, providerKey);
@@ -252,7 +252,7 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.AddRole(roleEntity.Id))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Roles, user.Roles).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Roles, user.Roles).ExecuteAsync();
             }
         }
 
@@ -273,7 +273,7 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.RemoveRole(role.Id))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Roles, user.Roles).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Roles, user.Roles).ExecuteAsync();
             }
         }
 
@@ -288,7 +288,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             if (user.Roles.Any())
             {
-                return await Context.Find<TRole, string>().Match(x => user.Roles.Contains(x.Id)).Project(x => x.Name).ExecuteAsync(cancellationToken);
+                return await Context.Find<TRole, string>().Match(x => user.Roles.Contains(x.ID)).Project(x => x.Name).ExecuteAsync(cancellationToken);
             }
             return new List<string>();
         }
@@ -348,7 +348,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             if (addedSome)
             {
-                var op = await Context.Update<TUser>().MatchID(user.ID).Modify(p => p.Claims, user.Claims).ExecuteAsync();
+                var op = await Context.Update<TUser>().MatchID(user.Id).Modify(p => p.Claims, user.Claims).ExecuteAsync();
                 if (!op.IsAcknowledged)
                 {
                     throw new Exception($"Failed to add claims to user {user.Id}");
@@ -375,7 +375,7 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.ReplaceClaim(claim, newClaim))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Claims, user.Claims).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Claims, user.Claims).ExecuteAsync();
             }
         }
 
@@ -393,7 +393,7 @@ namespace AspNetCore.Identity.MongoDbCore
             }
             if (user.RemoveClaims(claims))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Claims, user.Claims).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Claims, user.Claims).ExecuteAsync();
             }
         }
 
@@ -415,7 +415,7 @@ namespace AspNetCore.Identity.MongoDbCore
 
             if (user.AddLogin(login))
             {
-                await Context.Update<TUser>().MatchID(user.ID).Modify(e => e.Logins, user.Logins).ExecuteAsync();
+                await Context.Update<TUser>().MatchID(user.Id).Modify(e => e.Logins, user.Logins).ExecuteAsync();
             }
         }
 
@@ -556,7 +556,7 @@ namespace AspNetCore.Identity.MongoDbCore
                 var memberExpression = (MemberExpression)expression.Body;
                 var member = (PropertyInfo)memberExpression.Member;
                 member.SetValue(user, value);
-                await Context.Update<TUser>().MatchID(user.ID).Modify(expression, value).ExecuteAsync(cancellationToken);
+                await Context.Update<TUser>().MatchID(user.Id).Modify(expression, value).ExecuteAsync(cancellationToken);
             }
             if (ignoreCheck)
             {
@@ -617,7 +617,7 @@ namespace AspNetCore.Identity.MongoDbCore
         /// <inheritdoc />
         public override Task<int> IncrementAccessFailedCountAsync(TUser user, CancellationToken cancellationToken = default)
         {
-            return SetBase(user, e => e.AccessFailedCount, user.AccessFailedCount + 1, cancellationToken);
+            return SetBase(user, e => e.AccessFailedCount, user == null ? 0 : user.AccessFailedCount + 1, cancellationToken);
         }
 
         /// <inheritdoc />
