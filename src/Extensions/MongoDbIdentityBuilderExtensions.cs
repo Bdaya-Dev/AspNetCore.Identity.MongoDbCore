@@ -10,6 +10,10 @@ using AspNetCore.Identity.MongoDbCore.Models;
 using AspNetCore.Identity.MongoDbCore.Infrastructure;
 using MongoDB.Entities;
 using MongoDB.Driver;
+using MongoDB.Bson.Serialization.IdGenerators;
+using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -66,16 +70,36 @@ namespace Microsoft.Extensions.DependencyInjection
                 ConnectionString = connectionString,
                 DatabaseName = databaseName
             });
-            builder.AddMongoDbStores<TUser, TRole>(new DBContext());
+            builder.AddMongoDbStores<TUser, TRole>(new DBContext(databaseName, MongoClientSettings.FromConnectionString(connectionString)));
             return builder;
         }
+        public static void RegisterClassMaps()
+        {
 
+            BsonClassMapper.Instance.Register<IdentityUser<string>>(cm =>
+            {
+                cm.AutoMap();
+                cm.SetIsRootClass(true);
+                cm.UnmapProperty(nameof(IdentityUser<string>.Id));
+
+            });
+
+
+            BsonClassMapper.Instance.Register<MongoIdentityUser>(cm =>
+            {
+                cm.AutoMap();
+                cm.MapIdProperty(nameof(MongoIdentityUser.ID))
+               .SetIdGenerator(StringObjectIdGenerator.Instance)
+               .SetSerializer(new StringSerializer(BsonType.ObjectId));
+
+            });
+
+        }
         /// <summary>
         /// Adds an MongoDb implementation of identity information stores.
         /// </summary>
         /// <typeparam name="TUser">The type representing a user.</typeparam>
         /// <typeparam name="TRole">The type representing a role.</typeparam>
-        /// <typeparam name="TKey">The type of the primary key of the identity document.</typeparam>
         /// <param name="builder">The <see cref="IdentityBuilder"/> instance this method extends.</param>
         /// <param name="mongoDbContext"></param>
         public static IdentityBuilder AddMongoDbStores<TUser, TRole>(this IdentityBuilder builder, DBContext mongoDbContext)
@@ -86,7 +110,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 throw new ArgumentNullException(nameof(mongoDbContext));
             }
-
+            RegisterClassMaps();
             builder.Services.TryAddSingleton(mongoDbContext);
             builder.Services.TryAddScoped<IUserStore<TUser>>(provider =>
             {
@@ -102,6 +126,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static void AddStores(IServiceCollection services, Type userType, Type roleType, Type contextType)
         {
+            RegisterClassMaps();
             var identityUserType = FindGenericBaseType(userType, typeof(MongoIdentityUser));
             if (identityUserType == null)
             {
@@ -117,21 +142,17 @@ namespace Microsoft.Extensions.DependencyInjection
                     throw new InvalidOperationException(Resources.NotIdentityRole);
                 }
 
-                Type userStoreType = null;
-                Type roleStoreType = null;
-
                 // If its a custom DbContext, we can only add the default POCOs
-                userStoreType = typeof(MongoUserStore<,,>).MakeGenericType(userType, roleType, contextType);
-                roleStoreType = typeof(MongoRoleStore<,>).MakeGenericType(roleType, contextType);
+                Type userStoreType = typeof(MongoUserStore<,,>).MakeGenericType(userType, roleType, contextType);
+                Type roleStoreType = typeof(MongoRoleStore<,>).MakeGenericType(roleType, contextType);
 
                 services.TryAddScoped(typeof(IUserStore<>).MakeGenericType(userType), userStoreType);
                 services.TryAddScoped(typeof(IRoleStore<>).MakeGenericType(roleType), roleStoreType);
             }
             else
             {   // No Roles
-                Type userStoreType = null;
                 // If its a custom DbContext, we can only add the default POCOs
-                userStoreType = typeof(MongoUserStore<,,>).MakeGenericType(userType, roleType, contextType);
+                Type userStoreType = typeof(MongoUserStore<,,>).MakeGenericType(userType, roleType, contextType);
                 services.TryAddScoped(typeof(IUserStore<>).MakeGenericType(userType), userStoreType);
             }
 

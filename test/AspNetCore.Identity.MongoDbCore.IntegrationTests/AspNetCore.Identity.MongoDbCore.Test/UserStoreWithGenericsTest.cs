@@ -104,7 +104,8 @@ namespace AspNetCore.Identity.MongoDbCore.Test
         {
             var services = new ServiceCollection();
             var builder = services.AddIdentity<IdentityUser, object>();
-            var e = Assert.Throws<InvalidOperationException>(() => {
+            var e = Assert.Throws<InvalidOperationException>(() =>
+            {
                 //builder.AddEntityFrameworkStores<ContextWithGenerics>();
                 Throw();
             });
@@ -218,12 +219,14 @@ namespace AspNetCore.Identity.MongoDbCore.Test
 
 
     #region Generic Type defintions
-
+    [MongoDB.Entities.Collection("Users")]
     public class IdentityUserWithGenerics : MongoIdentityUser
     {
         public IdentityUserWithGenerics() : base()
         {
         }
+
+        public string ExtraName { get; set; } = "hi";
     }
 
     public class UserStoreWithGenerics : MongoUserStore<IdentityUserWithGenerics, MyIdentityRole, DBContext, IdentityUserClaimWithIssuer, IdentityUserRoleWithDate, IdentityUserLoginWithContext, IdentityUserTokenWithStuff, IdentityRoleClaimWithIssuer>
@@ -275,7 +278,7 @@ namespace AspNetCore.Identity.MongoDbCore.Test
         }
     }
 
-    public class RoleStoreWithGenerics : MongoRoleStore<MyIdentityRole, DBContext,  IdentityUserRoleWithDate, IdentityRoleClaimWithIssuer>
+    public class RoleStoreWithGenerics : MongoRoleStore<MyIdentityRole, DBContext, IdentityUserRoleWithDate, IdentityRoleClaimWithIssuer>
     {
         private string _loginContext;
         public RoleStoreWithGenerics(DBContext context, string loginContext) : base(context)

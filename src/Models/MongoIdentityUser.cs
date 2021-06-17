@@ -20,29 +20,6 @@ namespace AspNetCore.Identity.MongoDbCore.Models
     /// </summary>
     public class MongoIdentityUser : IdentityUser<string>, IEntity, IClaimHolder
     {
-
-        static MongoIdentityUser()
-        {
-            BsonClassMap.RegisterClassMap<IdentityUser<string>>(cm =>
-            {
-                cm.AutoMap();
-                cm.SetIsRootClass(true);
-                cm.UnmapProperty(nameof(Id));
-
-            });
-            BsonClassMap.RegisterClassMap<MongoIdentityUser>(cm =>
-            {
-                cm.AutoMap();
-                cm.MapIdProperty(nameof(ID))
-               .SetIdGenerator(StringObjectIdGenerator.Instance)
-               .SetSerializer(new StringSerializer(BsonType.ObjectId));
-
-            });
-        }
-
-        
-        
-
         /// <summary>
         /// The version of the schema do the <see cref="MongoIdentityUser"/> document.
         /// </summary>
@@ -68,7 +45,31 @@ namespace AspNetCore.Identity.MongoDbCore.Models
         /// </summary>
         public virtual List<Token> Tokens { get; set; }
 
+        //lock (_lock)
+        //    {
+        //        if (!BsonClassMap.IsClassMapRegistered(typeof(IdentityUser<string>)))
+        //        {
+        //            BsonClassMap.RegisterClassMap<IdentityUser<string>>(cm =>
+        //            {
+        //                cm.AutoMap();
+        //                cm.SetIsRootClass(true);
+        //                cm.UnmapProperty(nameof(Id));
 
+        //            });
+        //        }
+
+        //        if (!BsonClassMap.IsClassMapRegistered(typeof(MongoIdentityUser)))
+        //        {
+        //            BsonClassMap.RegisterClassMap<MongoIdentityUser>(cm =>
+        //            {
+        //                cm.AutoMap();
+        //                cm.MapIdProperty(nameof(ID))
+        //               .SetIdGenerator(StringObjectIdGenerator.Instance)
+        //               .SetSerializer(new StringSerializer(BsonType.ObjectId));
+
+        //            });
+        //        }
+        //    }
 
         /// <inheritdoc/>
         public string ID { get => Id; set => Id = value; }

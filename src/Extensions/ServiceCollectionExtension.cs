@@ -4,6 +4,10 @@ using AspNetCore.Identity.MongoDbCore.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Identity.Core;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.IdGenerators;
+using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Entities;
 
 namespace AspNetCore.Identity.MongoDbCore.Extensions
@@ -43,7 +47,7 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
 
             return CommonMongoDbSetup<TUser, MongoIdentityRole>(services, mongoDbIdentityConfiguration);
         }
-
+       
         /// <summary>
         /// Validates the MongoDbSettings
         /// </summary>
@@ -83,6 +87,7 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
             IdentityBuilder builder;
 
             ValidateMongoDbSettings(mongoDbIdentityConfiguration.MongoDbSettings);
+           
 
             if (mongoDbContext == null)
             {
@@ -112,7 +117,6 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
                     where TUser : MongoIdentityUser, new()
                     where TRole : MongoIdentityRole, new()
         {
-
             IdentityBuilder builder;
 
             builder = services.AddIdentityCore<TUser>()
@@ -128,5 +132,40 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
 
             return builder;
         }
+    }
+}
+
+/// <summary>
+/// Solves the concurrency issue when mapping classes
+/// </summary>
+public sealed class BsonClassMapper
+{
+
+    private static BsonClassMapper instance = null;
+
+    private static readonly object _lock = new object();
+
+    public static BsonClassMapper Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = new BsonClassMapper();
+            }
+            return instance;
+        }
+    }
+
+    public BsonClassMapper Register<T>(Action<BsonClassMap<T>> classMapInitializer)
+    {
+        lock (_lock)
+        {
+            if (!BsonClassMap.IsClassMapRegistered(typeof(T)))
+            {
+                BsonClassMap.RegisterClassMap(classMapInitializer);
+            }
+        }
+        return this;
     }
 }

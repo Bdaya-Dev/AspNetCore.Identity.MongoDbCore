@@ -18,21 +18,28 @@ namespace AspNetCore.Identity.MongoDbCore.Models
 
         static MongoIdentityRole()
         {
-            BsonClassMap.RegisterClassMap<IdentityRole<string>>(cm =>
+            if (!BsonClassMap.IsClassMapRegistered(typeof(IdentityRole<string>)))
             {
-                cm.AutoMap();
-                cm.SetIsRootClass(true);
-                cm.UnmapProperty(nameof(Id));
+                BsonClassMap.RegisterClassMap<IdentityRole<string>>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.SetIsRootClass(true);
+                    cm.UnmapProperty(nameof(Id));
 
-            });
-            BsonClassMap.RegisterClassMap<MongoIdentityRole>(cm =>
+                });
+            }
+            if (!BsonClassMap.IsClassMapRegistered(typeof(MongoIdentityRole)))
             {
-                cm.AutoMap();
-                cm.MapIdProperty(nameof(ID))
-               .SetIdGenerator(StringObjectIdGenerator.Instance)
-               .SetSerializer(new StringSerializer(BsonType.ObjectId));
+                BsonClassMap.RegisterClassMap<MongoIdentityRole>(cm =>
+                {
+                    cm.AutoMap();
+                    cm.MapIdProperty(nameof(ID))
+                   .SetIdGenerator(StringObjectIdGenerator.Instance)
+                   .SetSerializer(new StringSerializer(BsonType.ObjectId));
 
-            });
+                });
+            }
+
         }
 
         /// <summary>
