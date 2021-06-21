@@ -1,5 +1,4 @@
-﻿using AspNetCore.Identity.MongoDbCore.Extensions;
-using AspNetCore.Identity.MongoDbCore.Infrastructure;
+﻿using AspNetCore.Identity.MongoDbCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using MongoDB.Entities;

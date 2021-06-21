@@ -8,7 +8,7 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver;
-using AspNetCore.Identity.MongoDbCore.Extensions;
+
 using AspNetCore.Identity.MongoDbCore.Models;
 using Microsoft.AspNetCore.Identity;
 using MongoDB.Entities;

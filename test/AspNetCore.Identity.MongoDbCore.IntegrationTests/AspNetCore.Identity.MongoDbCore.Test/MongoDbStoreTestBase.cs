@@ -6,7 +6,6 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using AspNetCore.Identity.MongoDbCore.Extensions;
 using AspNetCore.Identity.MongoDbCore.IntegrationTests.Infrastructure;
 using AspNetCore.Identity.MongoDbCore.Models;
 using Microsoft.AspNetCore.Http;

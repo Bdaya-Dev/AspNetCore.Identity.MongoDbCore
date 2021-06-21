@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AspNetCore.Identity.MongoDbCore.Extensions
+namespace AspNetCore.Identity.MongoDbCore
 {
     // Thanks BlueRaja - Danny Pflughoeft https://stackoverflow.com/a/13095144/5103354
     /// <summary>

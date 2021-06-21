@@ -9,7 +9,10 @@ namespace AspNetCore.Identity.MongoDbCore.Models
     /// </summary>
     public class MongoClaim
     {
-
+        public MongoClaim()
+        {
+            Properties = new Dictionary<string, string>();
+        }
         /// <inheritdoc cref="Claim.Type"/>
         public string Type { get; set; }
 

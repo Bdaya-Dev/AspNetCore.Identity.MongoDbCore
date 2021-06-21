@@ -10,7 +10,7 @@ using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Bson.Serialization.Serializers;
 using MongoDB.Entities;
 
-namespace AspNetCore.Identity.MongoDbCore.Extensions
+namespace AspNetCore.Identity.MongoDbCore
 {
     /// <summary>
     /// Contains extension methods to <see cref="IServiceCollection"/> for adding mongoDb Identity.

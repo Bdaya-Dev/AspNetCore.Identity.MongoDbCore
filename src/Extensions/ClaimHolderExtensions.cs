@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 
-namespace AspNetCore.Identity.MongoDbCore.Extensions
+namespace AspNetCore.Identity.MongoDbCore
 {
     /// <summary>
     /// The extensions for an object that holds claims.
@@ -19,12 +19,20 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
         /// <returns>A <see cref="MongoClaim"/>.</returns>
         public static MongoClaim ToMongoClaim(this Claim claim)
         {
-            return new MongoClaim
+            var c = new MongoClaim
             {
                 Type = claim.Type,
                 Value = claim.Value,
-                Issuer = claim.Issuer
+                Issuer = claim.Issuer,
+                OriginalIssuer = claim.OriginalIssuer,
+                ValueType = claim.ValueType
             };
+
+            foreach (var item in claim.Properties)
+            {
+                c.Properties[item.Key] = item.Value;
+            }
+            return c;
         }
 
         /// <summary>
@@ -34,7 +42,12 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
         /// <returns> A <see cref="Claim"/>.</returns>
         public static Claim ToClaim(this MongoClaim mongoClaim)
         {
-            return new Claim(mongoClaim.Type, mongoClaim.Value, null, mongoClaim.Issuer);
+            var c = new Claim(mongoClaim.Type, mongoClaim.Value, mongoClaim.ValueType, mongoClaim.Issuer, mongoClaim.OriginalIssuer);
+            foreach (var item in mongoClaim.Properties)
+            {
+                c.Properties[item.Key] = item.Value;
+            }
+            return c;
         }
 
         /// <summary>
@@ -70,13 +83,23 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
         public static bool ReplaceClaim(this IClaimHolder claimHolder, Claim claim, Claim newClaim)
         {
             var replaced = false;
-            claimHolder.Claims.Where(uc => uc.Value == claim.Value && uc.Type == claim.Type).ToList()
-                       .ForEach(oldClaim => {
-                           oldClaim.Type = newClaim.Type;
-                           oldClaim.Value = newClaim.Value;
-                           oldClaim.Issuer = newClaim.Issuer;
-                           replaced |= true;
-                       });
+
+            foreach (var oldClaim in claimHolder.Claims.Where(uc => uc.Value == claim.Value && uc.Type == claim.Type))
+            {
+                oldClaim.Type = newClaim.Type;
+                oldClaim.Value = newClaim.Value;
+                oldClaim.ValueType = newClaim.ValueType;
+                oldClaim.Issuer = newClaim.Issuer;
+                oldClaim.OriginalIssuer = newClaim.OriginalIssuer;
+
+                oldClaim.Properties.Clear();
+                foreach (var item in newClaim.Properties)
+                {
+                    oldClaim.Properties[item.Key] = item.Value;
+                }
+
+                replaced |= true;
+            }
             return replaced;
         }
 
@@ -88,11 +111,13 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
         /// <returns>Returns true if the claim is present, false otherwise.</returns>
         public static bool HasClaim(this IClaimHolder claimHolder, Claim claim)
         {
-            if(claimHolder.Claims == null)
+            if (claimHolder.Claims == null)
             {
                 claimHolder.Claims = new List<MongoClaim>();
             }
             return claimHolder.Claims.Any(e => e.Value == claim.Value && e.Type == claim.Type);
+
+            
         }
 
         /// <summary>
@@ -108,7 +133,7 @@ namespace AspNetCore.Identity.MongoDbCore.Extensions
                 throw new ArgumentNullException(nameof(claim));
             }
             var exists = claimHolder.Claims
-                                    .FirstOrDefault(e => e.Value == claim.Value 
+                                    .FirstOrDefault(e => e.Value == claim.Value
                                                       && e.Type == claim.Type);
             if (exists != null)
             {
